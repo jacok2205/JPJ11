@@ -1,8 +1,7 @@
 """
     Description:
     ------------
-    Facilitates the simulation(s) per generation and is able to document critical progress properly and
-    professionally.
+    Facilitates for the various stages of this project to be stored in non-volatile memory.
 
     Global Variables:
     -----------------
@@ -10,17 +9,12 @@
 
     Imports:
     --------
-    __init__:               The initialization module for the package.
-    __config__:             Global variables to access from, according to what was configured from the user.
+    AntennaDesign.__init__:     The initialization module for the package, which will be a list of common public
+                                libraries.
 
     Notes:
     ------
-    The directories used for this module are the following:\n
-    -   Generation Fitness Results
-    -   Generation Geometry
-    -   Generation Results In Figure Form
-    -   Generation S11 Results
-    -   temp
+    None.
 """
 
 from AntennaDesign.__init__ import *
@@ -28,6 +22,27 @@ from AntennaDesign.__init__ import *
 
 class Filing:
     def __init__(self, Directories=None, Debugging=False):
+        """"
+        Description:
+        ------------
+        The constructor of the Filing class. It expects 2 parameters (optional), specifically Directories and Debugging.
+
+        Parameters:
+        -----------
+        Directories:        list
+                            A list of string elements that represent the directories that will be created.
+        Debugging:          bool
+                            For debugging purposes (developer mode).
+
+        Returns:
+        --------
+        None.
+
+        Notes:
+        ------
+        None.
+        """
+
         self.__directory__ = str(pkg_resources.files('AntennaDesign') / 'Filing')
         self.__debugging__ = Debugging
 
@@ -72,9 +87,10 @@ class Filing:
 
     def CreateFile(self, Filename):
         if os.path.exists(path=self.__directory__ + Filename):
-            return
+            return -1
         __temp__ = open(self.__directory__ + Filename, 'w')
         __temp__.close()
+        return 0
 
     def DeleteContent(self, Filename):
         __temp__ = open(self.__directory__ + Filename, 'w')
@@ -89,13 +105,9 @@ class Filing:
 
         Parameters:
         -----------
-        __filename__:                   str
-                                        The full path, with the filename and possible extension, of the file
-                                        to do the intended operation on.
-        __custom__:                     bool
-                                        When True, the __config__.__generation_number__ global variable is not used.
-                                        Conversely, if False, the __config__.__generation_number__ global variable is
-                                        used as a postfix to the __filename__ parameter.
+        Filename:                   str
+                                    The full path, with the filename and possible extension, of the file
+                                    to do the intended operation on.
 
         Return:
         -------

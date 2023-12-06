@@ -6,17 +6,16 @@ class ModelGeometry:
                  FrequencyRangeMin=1, FrequencyRangeMax=7, Debugging=False):
 
         if Simulator is None or ExploreSpace is None:
-            raise Exception('<ModelGeometry: __init__: A simulator is required to proceed>')
+            raise Exception('<ModelGeometry: __init__: A simulator and an explore space are required to proceed>')
 
         # The __parameter__ variable is the core for all three phases (space exploration, fine modeling, and
         # optimization phases), where only the 'name' and 'value' portions are considered for a single datapoint.
         # 'value' is the initial design made manually by the user.
-        self.__parameter__ = {'name': [], 'value': [], 'range': []}
+        self.__parameter__ = {'name': [], 'range': []}
         # The __static__/__dynamic__ variable will be stored in the first part of the logging/filing of results for
         # a reference. The sole objective of the __skeleton__ variable is purely for CST simulations. 'geometry'
         # is a list of geometry components, where each element within a component is a string.
-        self.__model__ = {'material': [], 'name': [], 'z': [], 'geometry': []}
-        self.__dynamic__ = {'material': [], 'name': [], 'z': [], 'geometry': []}
+        self.__model__ = {'material': [], 'name': [], 'operation': [], 'z': [], 'geometry': []}
 
         self.__waveguide_port__ = None
         self.__parameter_step_size__ = ParameterStepSize
