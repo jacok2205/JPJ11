@@ -2,7 +2,7 @@ from PyQt5 import QtWidgets, uic, QtCore
 import sys
 from AntennaDesign.__init__ import *
 from AntennaDesign.Filing import Filing
-from AntennaDesign.Surrogate import CoarseModel
+from AntennaDesign.surrogate import CoarseModel
 
 
 class Ui(QtWidgets.QMainWindow):

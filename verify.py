@@ -1,4 +1,4 @@
-from AntennaDesign.Surrogate import CoarseModel
+from AntennaDesign.surrogate import CoarseModel
 from AntennaDesign.Filing import Filing
 from AntennaDesign.__init__ import *
 

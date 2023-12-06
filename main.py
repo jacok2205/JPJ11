@@ -1,10 +1,10 @@
 from AntennaDesign.misc import RectangularMicrostripPatch
 from AntennaDesign.misc import MicrostripTransmissionLine
-from AntennaDesign.AntennaGeometry import ModelGeometry
-from AntennaDesign.Simulator import FineModel
+from AntennaDesign.antennaGeometry import ModelGeometry
+from AntennaDesign.simulator import FineModel
 from AntennaDesign.Filing import Filing
 from AntennaDesign.ga import SearchSpaceOptimizer
-from AntennaDesign.Surrogate import CoarseModel
+from AntennaDesign.surrogate import CoarseModel
 
 
 if __name__ == '__main__':

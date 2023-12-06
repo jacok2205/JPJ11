@@ -1,5 +1,5 @@
 from AntennaDesign.__init__ import *
-from AntennaDesign.Surrogate import CoarseModel
+from AntennaDesign.surrogate import CoarseModel
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from AntennaDesign.Filing import Filing
