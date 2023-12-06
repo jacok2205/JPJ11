@@ -3,7 +3,7 @@ from AntennaDesign.misc import MicrostripTransmissionLine
 from AntennaDesign.AntennaGeometry import ModelGeometry
 from AntennaDesign.Simulator import FineModel
 from AntennaDesign.Filing import Filing
-from AntennaDesign.GA import SearchSpaceOptimizer
+from AntennaDesign.ga import SearchSpaceOptimizer
 from AntennaDesign.Surrogate import CoarseModel
 
 
