@@ -1,9 +1,9 @@
 from AntennaDesign.misc import RectangularMicrostripPatch
 from AntennaDesign.misc import MicrostripTransmissionLine
-from AntennaDesign.ModelGeometry import ModelGeometry
-from AntennaDesign.Simulation import FineModel
+from AntennaDesign.AntennaGeometry import ModelGeometry
+from AntennaDesign.Simulator import FineModel
 from AntennaDesign.Filing import Filing
-from AntennaDesign.SearchSpaceOptimizer import SearchSpaceOptimizer
+from AntennaDesign.GA import SearchSpaceOptimizer
 from AntennaDesign.Surrogate import CoarseModel
 
 
