@@ -24,8 +24,7 @@ from AntennaDesign.__init__ import *
 
 class SearchSpaceOptimizer:
     def __init__(self, PopulationSize=12, NumberOfOffspring=6, CrossoverRate=0.5,
-                 MutationRate=0.05, modelGeometry=None, Filing=None, Directory=None,
-                 Logging=None, Debugging=False):
+                 MutationRate=0.05, modelGeometry=None, Filing=None, Directory=None, Debugging=False):
         if modelGeometry is None:
             raise Exception('<SearchSpaceOptimizer: __init__: AntennaGeometry and/or cstSimulation objects are '
                             'of type None>')
@@ -50,7 +49,6 @@ class SearchSpaceOptimizer:
 
         # Class objects
         self.__individual__ = modelGeometry
-        self.__logging__ = Logging
         self.__filing__ = Filing
 
         # Create directories

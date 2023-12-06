@@ -5,12 +5,11 @@ class CoarseModel:
     def __init__(self, NumberOfHiddenLayers=None, NumberOfInputChannels=None, NumberOfOutputChannels=None,
                  Learn=True, BatchSize=10, LearningRate=1e-3, Beta1=0.900, Beta2=0.999, Epsilon=1e-8,
                  ScalingFactor=1.5, LeakageRatio=0.3, ValidationAccuracy=0.8,
-                 Filing=None, Directory=None, Logging=None, Debugging=False):
+                 Filing=None, Directory=None, Debugging=False):
         if NumberOfHiddenLayers is None or NumberOfOutputChannels is None:
             raise Exception('<pdrn: NumberOfHiddenLayers or NumberOfOutputChannels not defined>')
 
         # Class objects
-        self.__logging__ = Logging
         self.__filing__ = Filing
 
         self.__debugging__ = Debugging
