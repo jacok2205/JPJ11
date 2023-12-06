@@ -7,7 +7,7 @@ from AntennaDesign.Surrogate import CoarseModel
 
 class Ui(QtWidgets.QMainWindow):
     def __init__(self):
-        # Call the inherited classes __init__ method
+        # Call the inherited classes __init__ method vc
         super(Ui, self).__init__()
         # Load the .ui file
         uic.loadUi("C:\\Users\\\Jakes-Work\\\Desktop\\\JPJ11_ver_1.0\\\JPJ11\\\JPJ11_GUI.ui", self)
