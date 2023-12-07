@@ -1,28 +1,61 @@
-"""
-    Description:
-    ------------
-    Facilitates for the various stages of this project to be stored in non-volatile memory.
-
-    Global Variables:
-    -----------------
-    None.
-
-    Imports:
-    --------
-    AntennaDesign.__init__:         The initialization module for the package, which will be a list of common public
-                                    libraries.
-
-    Notes:
-    ------
-    None.
-"""
-
+# The initialization module for the package AntennaDesign, which will be a list of common public libraries,
+# see AntennaDesign.__init__ for more information
 from AntennaDesign.__init__ import *
 
 
 class Filing:
+    """
+    Description:
+    ------------
+    Facilitates for the various stages of this project to be stored in non-volatile memory for later use.
+
+    Attributes:
+    -----------
+    __directory__:                  str
+                                    A private attribute that the class uses as its root directory.
+    __debugging__:                  bool
+                                    For debugging purposes (developer mode).
+
+    Methods:
+    --------
+    __init__(Directories=None, Debugging=False):
+                                    The constructor of the class, where a predefined set of directories
+                                    could be assigned as an argument and debugging can be enabled if debugging
+                                    the project.
+    CreateDirectories(Directories=None):
+                                    The same functionality for when the method __init__ with Directories. It simply
+                                    creates a tree of directories defined by the user, where a list of str type
+                                    elements are used to define the directory path(s) and names.
+    CreateFile(Filename):
+                                    Used to create a file given the path Filename, along with its file extension
+                                    (optional).
+    DeleteContent(Filename):
+                                    The data retained within the file is erased given the full path, from '\\Filing',
+                                    including the file extension (optional).
+    Read(Filename):
+                                    The data within the file is extracted into a list of lists, where each element
+                                    is a single data point. The format is [parameters, [[return loss frequency
+                                    range, return loss responses], [gain frequency range, gain responses]]]
+    Append(Filename, List):
+                                    The List parameter is appended to the file given the Filename.
+    Save(Filename, Lists):
+                                    The file is overwritten with the data contained in the Lists parameter. This
+                                    parameter is a list of lists with the same format as the Read function.
+    DeleteFile(Filename):
+                                    The file is permanently deleted given the Filename.
+    Duplicate(Filename, List):
+                                    The file, given the Filename, is searched through, where if a match occurs between
+                                    the List parameter and current line of data, the full line is returned in the
+                                    same format as the Read function, but only for a single data point. If no match
+                                    has been found, False is returned.
+
+    Notes:
+    ------
+    None.
+    """
+
     def __init__(self, Directories=None, Debugging=False):
-        """"
+        """
         Description:
         ------------
         The constructor of the Filing class. It expects 2 parameters (optional), specifically Directories and Debugging.
@@ -59,7 +92,7 @@ class Filing:
                     if self.__debugging__:
                         print(__error__)
 
-        # Create extra directories according to the defined Directories, if not None, variable
+        # Create extra directories according to the defined Directories, if not None, parameter
         if Directories is not None:
             for __i__ in Directories:
                 __temp__ = self.__directory__ + '\\'
@@ -73,7 +106,7 @@ class Filing:
                                 print(__error__)
 
     def CreateDirectories(self, Directories=None):
-        """"
+        """
         Description:
         ------------
         Creates a tree of directories under the root directory defined in the constructor of this class.
@@ -109,7 +142,7 @@ class Filing:
         return 0
 
     def CreateFile(self, Filename):
-        """"
+        """
         Description:
         ------------
         Creates a file given the Filename parameter.
@@ -136,7 +169,7 @@ class Filing:
         return 0
 
     def DeleteContent(self, Filename):
-        """"
+        """
         Description:
         ------------
         Wipes the content/data within the specified file.
@@ -281,7 +314,7 @@ class Filing:
             __file_save__ = open(f'{self.__directory__ + Filename}', 'w')
 
             for __i__ in range(len(Lists)):
-                __file_save__.write(f'{__i__} = {Lists[__i__]}\n')
+                __file_save__.write(f'{Lists[__i__]}\n')
             __file_save__.close()
 
             return 0
@@ -341,7 +374,7 @@ class Filing:
         Return:
         -------
         If a match occurs, the full list, with its simulation results, will be returned in the format of
-        [parameters, [return loss, gain]]
+        [parameters, [[return loss frequency range, return loss responses], [gain frequency range, gain]]]
 
         Notes:
         ------
