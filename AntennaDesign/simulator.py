@@ -10,8 +10,7 @@
 
     Imports:
     --------
-    __init__:           The initialization module for the package.
-    __config__:         Global variables to access from, according to what was configured from the user.
+    AntennaDesign.__init__:           The initialization module for the package.
 
     Notes:
     ------
@@ -28,10 +27,11 @@ class FineModel:
         self.__s11_results__ = S11Results
         self.__gain_results__ = GainResults
 
+        # COM object(s)
         self.__cst__ = None
         self.__mws__ = None
 
-        # Debugging
+        # Debugging (developer mode)
         self.__debugging__ = Debugging
 
     def Initialize(self, FrequencyRangeMin, FrequencyRangeMax, DimensionUnits='mm',
