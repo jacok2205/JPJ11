@@ -302,17 +302,17 @@ def brick(mws, name, component, material, xrange, yrange, zrange):
     """
 
     try:
-        brick = mws.Brick
-        brick.Reset()
-        brick.Name(name)
-        brick.Component(component)
-        brick.Material(material)
-        brick.xrange(str(xrange[0]), str(xrange[1]))
-        brick.yrange(str(yrange[0]), str(yrange[1]))
-        brick.zrange(str(zrange[0]), str(zrange[1]))
-        brick.Create
+        Brick = mws.Brick
+        Brick.Reset()
+        Brick.Name(name)
+        Brick.Component(component)
+        Brick.Material(material)
+        Brick.xrange(str(xrange[0]), str(xrange[1]))
+        Brick.yrange(str(yrange[0]), str(yrange[1]))
+        Brick.zrange(str(zrange[0]), str(zrange[1]))
+        Brick.Create
 
-        format(brick)
+        format(Brick)
 
         return 0
 
@@ -363,32 +363,32 @@ def cylinder(mws, name, component, material, orientation, outerRadius, innerRadi
     """
 
     try:
-        cylinder = mws.Cylinder
-        cylinder.Reset()
-        cylinder.Name(name)
-        cylinder.Component(component)
-        cylinder.Material(material)
-        cylinder.Axis(orientation)
-        cylinder.Outerradius(outerRadius)
-        cylinder.Innerradius(innerRadius)
+        Cylinder = mws.Cylinder
+        Cylinder.Reset()
+        Cylinder.Name(name)
+        Cylinder.Component(component)
+        Cylinder.Material(material)
+        Cylinder.Axis(orientation)
+        Cylinder.Outerradius(outerRadius)
+        Cylinder.Innerradius(innerRadius)
 
         if orientation == 'Z':
-            cylinder.Xcenter(str(Xcenter))
-            cylinder.Ycenter(str(Ycenter))
-            cylinder.Zrange(str(Zrange[0]), str(Zrange[1]))
+            Cylinder.Xcenter(str(Xcenter))
+            Cylinder.Ycenter(str(Ycenter))
+            Cylinder.Zrange(str(Zrange[0]), str(Zrange[1]))
         elif orientation == 'X':
-            cylinder.Ycenter(str(Ycenter))
-            cylinder.Zcenter(str(Zcenter))
-            cylinder.Xrange(str(Xrange[0]), str(Xrange[1]))
+            Cylinder.Ycenter(str(Ycenter))
+            Cylinder.Zcenter(str(Zcenter))
+            Cylinder.Xrange(str(Xrange[0]), str(Xrange[1]))
         elif orientation == 'Y':
-            cylinder.Xcenter(str(Xcenter))
-            cylinder.Zcenter(str(Zcenter))
-            cylinder.Yrange(str(Yrange[0]), str(Yrange[1]))
+            Cylinder.Xcenter(str(Xcenter))
+            Cylinder.Zcenter(str(Zcenter))
+            Cylinder.Yrange(str(Yrange[0]), str(Yrange[1]))
 
-        cylinder.Segments(segments)
+        Cylinder.Segments(segments)
 
-        cylinder.Create()
-        format(cylinder)
+        Cylinder.Create()
+        format(Cylinder)
 
         return 0
 
@@ -428,19 +428,19 @@ def sphere(mws, name, component, material, axis, centreRadius, topRadius, bottom
     """
 
     try:
-        sphere = mws.Sphere
-        sphere.Reset()
-        sphere.Name(name)
-        sphere.Component(component)
-        sphere.Material(material)
-        sphere.Axis(axis)
-        sphere.CenterRadius(str(centreRadius))
-        sphere.TopRadius(str(topRadius))
-        sphere.BottomRadius(str(bottomRadius))
-        sphere.Centre(str(centre(0)), str(centre(1)), str(centre(2)))
-        sphere.Segments('0')
-        sphere.Create()
-        format(sphere)
+        Sphere = mws.Sphere
+        Sphere.Reset()
+        Sphere.Name(name)
+        Sphere.Component(component)
+        Sphere.Material(material)
+        Sphere.Axis(axis)
+        Sphere.CenterRadius(str(centreRadius))
+        Sphere.TopRadius(str(topRadius))
+        Sphere.BottomRadius(str(bottomRadius))
+        Sphere.Centre(str(centre(0)), str(centre(1)), str(centre(2)))
+        Sphere.Segments('0')
+        Sphere.Create()
+        format(Sphere)
 
         return 0
 

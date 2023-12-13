@@ -15,7 +15,7 @@ class ModelGeometry:
         # The __static__/__dynamic__ variable will be stored in the first part of the logging/filing of results for
         # a reference. The sole objective of the __skeleton__ variable is purely for CST simulations. 'geometry'
         # is a list of geometry components, where each element within a component is a string.
-        self.__model__ = {'material': [], 'name': [], 'operation': [], 'z': [], 'geometry': []}
+        self.__model__ = {'material': [], 'name': [], 'type': [], 'operation': [], 'z': [], 'geometry': []}
 
         self.__waveguide_port__ = None
         self.__parameter_step_size__ = ParameterStepSize

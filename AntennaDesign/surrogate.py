@@ -292,9 +292,9 @@ class CoarseModel:
                 for __k__ in range(len(self.__weights_array__[__i__][__j__])):
                     self.__weights_array__[__i__][__j__][__k__] -=\
                         (self.__alpha__ * (1 - self.__beta_2__ ** __time_step__) ** 0.5 /
-                         (1 - self.__beta_1__)) * (self.__mean__[__i__][__j__][__k__] /
-                                                   (self.__variance__[__i__][__j__][__k__] ** 0.5 +
-                                                    self.__epsilon__))
+                         (1 - self.__beta_1__ ** __time_step__)) * (self.__mean__[__i__][__j__][__k__] /
+                                                                    (self.__variance__[__i__][__j__][__k__] ** 0.5 +
+                                                                     self.__epsilon__))
                     self.__mean__[__i__][__j__][__k__] = 0
                     self.__variance__[__i__][__j__][__k__] = 0
 

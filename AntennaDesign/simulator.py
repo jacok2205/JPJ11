@@ -19,13 +19,12 @@
 
 from AntennaDesign.__init__ import *
 
+# The antenna format per layer is the following:
+# [material name; component name; type (brick, cylinder); operation (add, subtract, none); z-range; geometry components]
+
 
 class FineModel:
-    def __init__(self, S11Results, GainResults, Debugging=False):
-
-        # Bool variables
-        self.__s11_results__ = S11Results
-        self.__gain_results__ = GainResults
+    def __init__(self, Debugging=False):
 
         # COM object(s)
         self.__cst__ = None
@@ -40,11 +39,11 @@ class FineModel:
                    ConductanceUnits='Siemens', CapacitanceUnits='PikoF', InductanceUnits='nanoH'):
         # Open the CST Studio Suite software
         self.__cst__ = pycst.connect()
-        # Get the active 3D window
-        self.__mws__ = pycst.get_active_3d(cst=self.__cst__)
         # Open the 'Python_Control.cst' CST Studio Suite project.
         pycst.open_project(cst=self.__cst__, path=str(pkg_resources.files('AntennaDesign') /
                                                       'Python_Control\\Python_Control.cst'))
+        # Get the active 3D window
+        self.__mws__ = pycst.get_active_3d(cst=self.__cst__)
         # Set the simulation frequency range
         pycst.frequency_range(mws=self.__mws__, frange1=FrequencyRangeMin, frange2=FrequencyRangeMax)
         # Disable interactive mode, which enables scripting mode
@@ -93,7 +92,7 @@ class FineModel:
         if Model is None:
             raise Exception('<FineModel.ConstructAntenna: Model is of None type>')
 
-        # Remove all components
+        # Remove all components to begin with a new model
         self._remove_all(__component__=Model)
 
         # Construct layers
@@ -101,9 +100,10 @@ class FineModel:
         #   index           Element description
         #     0             str, layer material name
         #     1             str, layer component/solid name
-        #     2             str, layer operation type
-        #     3             list, layer height range --> [zmin, zmax]
-        #     4             list, layer Model component blocks --> [x_min, x_max, y_min, y_max]
+        #     1             str, type (brick, cylinder)
+        #     3             str, layer operation type
+        #     4             list, layer height range --> [zmin, zmax]
+        #     5             list, layer Model component blocks --> [x_min, x_max, y_min, y_max]
         # Layers
         __solid_names__ = []
         for __i__ in Model:
@@ -148,33 +148,28 @@ class FineModel:
                              orientation=ExcitationDirection)
 
     def _get_results(self):
-        if self.__s11_results__ or self.__gain_results__:
 
             __s11_result_vector__ = []
             __gain_result_vector__ = []
 
-            if self.__s11_results__:
-                try:
-                    # Retrieve the S11 results from the simulation
-                    __s11_result_vector__ = pycst.result_parameters(mws=self.__mws__)
+            try:
+                # Retrieve the S11 results from the simulation
+                __s11_result_vector__ = pycst.result_parameters(mws=self.__mws__)
 
-                except Exception as __error__:
-                    if self.__debugging__:
-                        print(__error__)
+            except Exception as __error__:
+                if self.__debugging__:
+                    print(__error__)
 
-            if self.__gain_results__:
-                try:
-                    # Retrieve the gain results from the simulation
-                    __gain_result_vector__ = pycst.result_parameters(mws=self.__mws__, parent_path=r'Tables\1D Results')
+            try:
+                # Retrieve the gain results from the simulation
+                __gain_result_vector__ = pycst.result_parameters(mws=self.__mws__, parent_path=r'Tables\1D Results')
 
-                except Exception as __error__:
-                    if self.__debugging__:
-                        print(__error__)
+            except Exception as __error__:
+                if self.__debugging__:
+                    print(__error__)
 
             return [[__s11_result_vector__[0], __s11_result_vector__[2]],
                     [__gain_result_vector__[0], __gain_result_vector__[1]]]
-
-        return -1
 
     def _remove_all(self, __component__=None):
         """
@@ -206,6 +201,3 @@ class FineModel:
                 pycst.delete_component(mws=self.__mws__, component=__i__[1])
 
             pycst.delete_waveguide_port(mws=self.__mws__, port_number='1')
-
-    def SwitchDebugging(self):
-        self.__debugging__ ^= 1
