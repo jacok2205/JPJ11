@@ -153,42 +153,42 @@ class ModelGeometry:
     def CheckBoundary(self, Parameters):
         __geometry__ = []
         for __i__ in range(len(self.__model__['geometry'])):
-            for __j__ in self.__model__['geometry'][__i__]:
-                __temp__ = [__j__[0], __j__[1], __j__[2], __j__[3]]
-                for __k__ in range(len(self.__parameter__['name'])):
-                    __temp__[0] = \
-                        __temp__[0].replace(self.__parameter__['name'][__k__], str(Parameters[__k__]))
-                    __temp__[1] = \
-                        __temp__[1].replace(self.__parameter__['name'][__k__], str(Parameters[__k__]))
-                    __temp__[2] = \
-                        __temp__[2].replace(self.__parameter__['name'][__k__], str(Parameters[__k__]))
-                    __temp__[3] = \
-                        __temp__[3].replace(self.__parameter__['name'][__k__], str(Parameters[__k__]))
-                __temp__[0] = eval(__temp__[0])
-                __temp__[1] = eval(__temp__[1])
-                __temp__[2] = eval(__temp__[2])
-                __temp__[3] = eval(__temp__[3])
-                __geometry__.append(__temp__)
+            # If any of the geometry component components are of str type, proceed for boundary checks
+            if isinstance(self.__model__['geometry'][__i__][0], str) or \
+                    isinstance(self.__model__['geometry'][__i__][1], str) or \
+                    isinstance(self.__model__['geometry'][__i__][2], str) or \
+                    isinstance(self.__model__['geometry'][__i__][3], str):
+                __temp__ = [self.__model__['geometry'][__i__][0],
+                            self.__model__['geometry'][__i__][1],
+                            self.__model__['geometry'][__i__][2],
+                            self.__model__['geometry'][__i__][3]]
 
-        # Get slot extreme minimum and maximum slot x/y values
-        __slot_x_min__ = __geometry__[0][0]
-        __slot_x_max__ = __geometry__[0][1]
-        __slot_y_min__ = __geometry__[0][2]
-        __slot_y_max__ = __geometry__[0][3]
-        for __i__ in __geometry__:
-            if __i__[0] < __slot_x_min__:
-                __slot_x_min__ = __i__[0]
-            if __i__[1] > __slot_x_max__:
-                __slot_x_max__ = __i__[1]
-            if __i__[2] < __slot_y_min__:
-                __slot_y_min__ = __i__[2]
-            if __i__[3] > __slot_y_max__:
-                __slot_y_max__ = __i__[3]
+                # Replace any parameter names with Parameter[__j__] value
+                for __j__ in self.__parameter__:
+                    if isinstance(__temp__[0], str):
+                        __temp__[0] = __temp__[0].replace(__j__['name'][__j__], Parameters[__j__])
+                    if isinstance(__temp__[1], str):
+                        __temp__[1] = __temp__[1].replace(__j__['name'][__j__], Parameters[__j__])
+                    if isinstance(__temp__[2], str):
+                        __temp__[2] = __temp__[2].replace(__j__['name'][__j__], Parameters[__j__])
+                    if isinstance(__temp__[3], str):
+                        __temp__[3] = __temp__[3].replace(__j__['name'][__j__], Parameters[__j__])
 
-        # Check if the min/max x/y values conform to the explore space boundaries, in other words does not exceed
-        # the explore space boundaries
-        for __i__ in self.__explore_space__:
-            if __slot_x_min__ < __i__[0] or __slot_x_max__ > __i__[1] \
-                    or __slot_y_min__ < __i__[2] or __slot_y_max__ > __i__[3]:
-                raise Exception('<ModelGeometry: CheckBoundary: '
-                                'Parameter is out of bounds for given explore space>')
+                if isinstance(__temp__[0], str):
+                    __temp__[0] = eval(__temp__[0])
+                if isinstance(__temp__[1], str):
+                    __temp__[1] = eval(__temp__[1])
+                if isinstance(__temp__[2], str):
+                    __temp__[2] = eval(__temp__[2])
+                if isinstance(__temp__[3], str):
+                    __temp__[3] = eval(__temp__[3])
+
+                # Compare the limits found from __temp__ with self.__explore_space__ variable
+                for __j__ in self.__explore_space__:
+                    # If a z range match has been found, proceed
+                    if self.__model__['z'][__i__][0] == __j__[0][0] and self.__model__['z'][__i__][1] == __j__[0][1]:
+                        if __temp__[0] < __j__[1][0] or __temp__[1] > __j__[1][1] or __temp__[2] < __j__[1][2] or \
+                                __temp__[3] > __j__[1][3]:
+                            raise Exception(f'<ModelGeometry: CheckBoundary: A geometry component with parameters, '
+                                            f'specifically {self.__model__["geometry"][__i__]}, is out of bounds for '
+                                            f'explore space {__j__}>')
