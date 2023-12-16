@@ -35,7 +35,7 @@ class Filing:
     Read(Filename):
                                     The data within the file is extracted into a list of lists, where each element
                                     is a single data point. The format is [parameters, [[return loss frequency
-                                    range, return loss responses], [gain frequency range, gain responses]]]
+                                    range, return loss responses], [gain frequency range, gain responses]]].
     Append(Filename, List):
                                     The List parameter is appended to the file given the Filename.
     Save(Filename, Lists):
@@ -119,7 +119,7 @@ class Filing:
         Returns:
         --------
         Returns 0 if all/most the directories received from Directories has been created, else -1 if
-        Directories is of None type.s
+        Directories is of None type.
 
         Notes:
         ------
@@ -257,8 +257,8 @@ class Filing:
         Parameters:
         -----------
         Filename:                   str
-                                    The full path, with the filename and possible extension, of the file
-                                    to do the intended operation on.
+                                    The full path, with the filename and possible extension, of the file to do the
+                                    intended operation on.
         List:                       list
                                     A list to be appended onto the file Filename.
 
@@ -294,8 +294,8 @@ class Filing:
         Parameters:
         -----------
         Filename:                   str
-                                    The full path, with the filename and possible extension, of the file
-                                    to do the intended operation on.
+                                    The full path, with the filename and possible extension, of the file to do the
+                                    intended operation on.
         Lists:                      list
                                     A list of lists to save into the file given the Filename parameter. Note that
                                     all the data within the file will be replaced with the content from the Lists
@@ -334,8 +334,8 @@ class Filing:
         Parameters:
         -----------
         Filename:                   str
-                                    The full path, with the filename and possible extension, of the file
-                                    to do the intended operation on.
+                                    The full path, with the filename and possible extension, of the file to do the
+                                    intended operation on.
 
         Return:
         -------
@@ -366,15 +366,15 @@ class Filing:
         Parameters:
         -----------
         Filename:                   str
-                                    The full path, with the filename and possible extension, of the file
-                                    to do the search on.
+                                    The full path, with the filename and possible extension, of the file to do the
+                                    search on.
         List:                       list
                                     The list to compare the data within the file Filename with.
 
         Return:
         -------
         If a match occurs, the full list, with its simulation results, will be returned in the format of
-        [parameters, [[return loss frequency range, return loss responses], [gain frequency range, gain]]]
+        [parameters, [[return loss frequency range, return loss responses], [gain frequency range, gain]]].
 
         Notes:
         ------

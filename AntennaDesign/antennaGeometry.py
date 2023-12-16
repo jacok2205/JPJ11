@@ -38,11 +38,11 @@ class ModelGeometry:
                                     The size a parameter is allowed to step.
     __objective__:                  list
                                     The objectives of the antenna model, which has the format: [[band1, tolerance1],
-                                    [band2, tolerance2], ..., [band_n, tolerance_n]]
+                                    [band2, tolerance2], ..., [band_n, tolerance_n]].
     __explore_space__:              list
                                     A list that contains the boundaries of a geometry component that contains at least
                                     one parameter. The format is: [[x_min1, x_max1, y_min1, y_max1, z_min1, z_max1],
-                                    ..., [x_min_n, x_max_n, y_min_n, y_max_n, z_min_n, z_max_n]]
+                                    ..., [x_min_n, x_max_n, y_min_n, y_max_n, z_min_n, z_max_n]].
     __debugging__:                  bool
                                     For debugging purposes (developer mode).
 
@@ -97,7 +97,7 @@ class ModelGeometry:
         Parameters:
         -----------
         ParameterStepSize:          list
-                                    The size of the parameter is allowed
+                                    The size of the parameter is allowed.
         Objectives:                 list
                                     Each element is a frequency range (along with a band edge tolerance). The format
                                     is: [[f1_min, f1_max, tolerance1], [f2_min, f2_max, tolerance2], ..., [fn_min,
@@ -107,7 +107,7 @@ class ModelGeometry:
         ExploreSpace:               list
                                     Each element is a set of boundary's, and has the following format: [[x1_min, x1_max,
                                     y1_min, y1_max, z1_min, z2_max], ..., [xn_min, xn_max, yn_min, yn_max, zn_min,
-                                    zn_max]]
+                                    zn_max]].
         FrequencyRangeMin:          float
                                     The minimum frequency that the simulator uses for simulation results.
         FrequencyRangeMax:          float
@@ -253,7 +253,8 @@ class ModelGeometry:
         self.__model__['z'].append(Z)
         self.__model__['geometry'].append(Geometry)
 
-    def SetWaveguidePort(self, PortNumber=None, Orientation=None, XRange=None, YRange=None, ZRange=None):
+    def SetWaveguidePort(self, PortNumber=None, Orientation=None, ExcitationDirection=None, XRange=None,
+                         YRange=None, ZRange=None):
         """
         Description:
         ------------
@@ -266,6 +267,8 @@ class ModelGeometry:
         Orientation:                str
                                     The orientation of the waveguide port normal to either the x-axis, y-axis, or
                                     z-axis.
+        ExcitationDirection:        str
+                                    Describes the direction of excitation, either 'Positive' or 'Negative'.
         XRange:                     list
                                     A list that contains two elements, specifically the minimum x value and the
                                     maximum x value.
@@ -285,11 +288,12 @@ class ModelGeometry:
         None.
         """
 
-        if PortNumber is None or Orientation is None or XRange is None or YRange is None or ZRange is None:
+        if PortNumber is None or Orientation is None or ExcitationDirection is None or XRange is None or \
+                YRange is None or ZRange is None:
             self.__waveguide_port__ = None
             raise Exception('<ModelGeometry: SetWaveguidePort: One or more parameters is of type None>')
 
-        self.__waveguide_port__ = [PortNumber, Orientation, XRange, YRange, ZRange]
+        self.__waveguide_port__ = [PortNumber, Orientation, ExcitationDirection, XRange, YRange, ZRange]
 
     def SimulateModel(self, Parameters=None):
         """
@@ -361,9 +365,11 @@ class ModelGeometry:
         # Construct the antenna and waveguide port
         self.__simulator__.ConstructAntenna(Model=__model__)
         self.__simulator__.ConstructWaveguidePort(PortNumber=self.__waveguide_port__[0],
-                                                  XRange=self.__waveguide_port__[1],
-                                                  YRange=self.__waveguide_port__[2],
-                                                  ZRange=self.__waveguide_port__[3])
+                                                  Orientation=self.__waveguide_port__[1],
+                                                  ExcitationDirection=self.__waveguide_port__[2],
+                                                  XRange=self.__waveguide_port__[3],
+                                                  YRange=self.__waveguide_port__[4],
+                                                  ZRange=self.__waveguide_port__[5])
 
         # Simulate and return the results
         return self.__simulator__.TimeDomainSolver(SteadyStateLimit=-47)
