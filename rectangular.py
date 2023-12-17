@@ -44,3 +44,5 @@ if __name__ == '__main__':
     simulator.ConstructWaveguidePort(PortNumber=waveguide[0], Orientation=waveguide[1], ExcitationDirection=waveguide[2], XRange=waveguide[3],
                                      YRange=waveguide[4], ZRange=waveguide[5])
     print(simulator.TimeDomainSolver(SteadyStateLimit=-40))
+
+    # END
