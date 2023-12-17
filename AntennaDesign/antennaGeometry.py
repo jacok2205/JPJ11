@@ -86,7 +86,7 @@ class ModelGeometry:
     None.
     """
 
-    def __init__(self, ParameterStepSize, Objectives=None, Simulator=None, ExploreSpace=None,
+    def __init__(self, ParameterStepSize=None, Objectives=None, Simulator=None, ExploreSpace=None,
                  FrequencyRangeMin=1, FrequencyRangeMax=7, Debugging=False):
         """
         Description:
@@ -126,6 +126,8 @@ class ModelGeometry:
 
         if Simulator is None or ExploreSpace is None:
             raise Exception('<ModelGeometry: __init__: A simulator and an explore space are required to proceed>')
+        if ParameterStepSize is None:
+            raise Exception('<ModelGeometry: __init__: The parameter step size must be set to some positive float value>')
 
         self.__parameter__ = {'name': [], 'range': []}
         self.__model__ = {'material': [], 'name': [], 'type': [], 'operation': [], 'z': [], 'geometry': []}
