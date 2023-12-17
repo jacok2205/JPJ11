@@ -400,20 +400,20 @@ def time_domain_solver(mws, steadyStateLimit):
         mesh.SetCreator('High Frequency')
 
         solver = mws.Solver
-        solver.Method('Hexahedral')
-        solver.CalculationType('TD-S')
-        solver.StimulationPort('All')
-        solver.StimulationMode('All')
+        # solver.Method('Hexahedral')
+        # solver.CalculationType('TD-S')
+        # solver.StimulationPort('All')
+        # solver.StimulationMode('All')
         solver.SteadyStateLimit(f'{steadyStateLimit}')
-        solver.MeshAdaption('False')
-        solver.NormingImpedance('50')
-        solver.CalculateModesOnly('False')
-        solver.SParaSymmetry('False')
-        solver.StoreTDResultsInCache('False')
-        solver.FullDeembedding('False')
-        solver.SuperimposePLWExcitation('False')
-        solver.UseSensitivityAnalysis('False')
-        solver.MaximumNumberOfThreads('12')
+        # solver.MeshAdaption('False')
+        # solver.NormingImpedance('50')
+        # solver.CalculateModesOnly('False')
+        # solver.SParaSymmetry('False')
+        # solver.StoreTDResultsInCache('False')
+        # solver.FullDeembedding('False')
+        # solver.SuperimposePLWExcitation('False')
+        # solver.UseSensitivityAnalysis('False')
+        # solver.MaximumNumberOfThreads('12')
         solver.Start
 
         return 0

@@ -140,27 +140,38 @@ class FineModel:
         self.__cst__ = pycst.connect()
         # Sleep for 6 seconds in order for the CST program to completely open
         time.sleep(6)
+        if self.__debugging__:
+            print('<simulator: FineModel: Initialize: 1. CST Studio Suite opened>')
 
         # Disable interactive mode, which enables scripting mode
         pycst.SetQuietMode(cst=self.__cst__)
         # Sleep for 6 seconds
         time.sleep(6)
+        if self.__debugging__:
+            print('<simulator: FineModel: Initialize: 2. Script mode initiated>')
 
         # Open the 'Python_Control.cst' CST Studio Suite project.
         pycst.open_project(cst=self.__cst__, path=str(pkg_resources.files('AntennaDesign') /
                                                       'Python_Control\\Python_Control.cst'))
         # Sleep for 6 seconds
         time.sleep(6)
+        if self.__debugging__:
+            print('<simulator: FineModel: Initialize: 3. Project opened>')
 
         # Get the active 3D window
         self.__mws__ = pycst.get_active_3d(cst=self.__cst__)
         # Sleep for 6 seconds
         time.sleep(6)
+        if self.__debugging__:
+            print('<simulator: FineModel: Initialize: 4. Current project assigned>')
 
         # Set the simulation frequency range
         pycst.frequency_range(mws=self.__mws__, frange1=FrequencyRangeMin, frange2=FrequencyRangeMax)
         # Sleep for 6 seconds
         time.sleep(6)
+        if self.__debugging__:
+            print(f'<simulator: FineModel: Initialize: 5. Frequency range assigned, f_min = {FrequencyRangeMin}, '
+                  f'f_max = {FrequencyRangeMax}>')
 
         # Set CST Studio Suite units
         pycst.set_units(mws=self.__mws__, dimension=DimensionUnits, frequency=FrequencyUnits,
@@ -170,6 +181,8 @@ class FineModel:
                         capacitance=CapacitanceUnits, inductance=InductanceUnits)
         # Sleep for 6 seconds
         time.sleep(6)
+        if self.__debugging__:
+            print('<simulator: FineModel: Initialize: 6. Units set>')
 
     def TimeDomainSolver(self, SteadyStateLimit=-40):
         """
@@ -237,10 +250,10 @@ class FineModel:
         #     "brick"    --> [x_min, x_max, y_min, y_max],
         #     "cylinder" --> [orientation, inner radius, outer radius, Xcenter, Ycenter, Zcenter, Xrange, Yrange,
         #                                                                                       Zrange, segments]
-        # Layers/sequences
 
         __components__ = {'name': [], 'index': [], 'material': []}
 
+        # Layers/sequences
         for __i__ in Model:
 
             # Create a new material if it has not been seen before
@@ -278,7 +291,7 @@ class FineModel:
                                   component1=__i__[1],
                                   solid1=f'{__i__[1]}_0',
                                   component2=__i__[1],
-                                  solid2=f'{__i__[1]}_{__current_index__}')
+                                  solid2=f'{__i__[1]}_{__components__["index"][__current_index__]}')
 
                     # For 'subtract' type
                     elif __i__[3] == 'subtract' and __components__['index'][__current_index__] > 0:
