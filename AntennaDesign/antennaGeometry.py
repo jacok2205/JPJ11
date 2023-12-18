@@ -63,21 +63,21 @@ class ModelGeometry:
     SetWaveguidePort(PortNumber=None, XRange=None, YRange=None, ZRange=None):
                                     Sets a single waveguide port to the model. Note that this is required for a
                                     successful simulation to occur.
-    SimulateModel(Parameters=None):
+    SimulateModel(Parameters=None, Rounding=None):
                                     Simulates the model through the Simulator instance and returns the simulation
                                     results.
-    GenerateRandomParameterValue(ParameterIndex=None):
+    GenerateRandomParameterValue(Parameters=None, ParameterIndex=None, Rounding=None):
                                     Initializes a new set of parameter values given their ranges and returns them, or
                                     returns a new random value within the indexed parameter.
-    IncrementParameterValue(Parameters=None, Index=None):
+    IncrementParameterValue(Parameters=None, Index=None, Rounding=None):
                                     Increments the indexed parameter value if and only if the increment results for
                                     the parameter to be within its defined range. Note that the increment is the size
                                     of the defined parameter step size.
-    DecrementParameterValue(Parameters=None, Index=None):
+    DecrementParameterValue(Parameters=None, Index=None, Rounding=None):
                                     Decrements the indexed parameter value if and only if the decrement results for
                                     the parameter to be within its defined range. Note that the increment is the size
                                     of the defined parameter step size.
-    CheckBoundary(Parameters):
+    CheckBoundary(Parameters, Rounding=None):
                                     Checks whether a geometry component, that contains at least one parameter, is within
                                     the defined explore space.
 
@@ -127,7 +127,8 @@ class ModelGeometry:
         if Simulator is None or ExploreSpace is None:
             raise Exception('<ModelGeometry: __init__: A simulator and an explore space are required to proceed>')
         if ParameterStepSize is None:
-            raise Exception('<ModelGeometry: __init__: The parameter step size must be set to some positive float value>')
+            raise Exception('<ModelGeometry: __init__: The parameter step size must be set to some positive '
+                            'float value>')
 
         self.__parameter__ = {'name': [], 'range': []}
         self.__model__ = {'material': [], 'name': [], 'type': [], 'operation': [], 'z': [], 'geometry': []}
@@ -199,7 +200,7 @@ class ModelGeometry:
         """
 
         if Name is None or Range is None:
-            raise Exception('<AntennaGeometry: AddParameter: One or more parameters are of None type>')
+            raise Exception('<ModelGeometry: AddParameter: One or more parameters are of None type>')
 
         self.__parameter__['name'].append(Name)
         self.__parameter__['range'].append(Range)
@@ -246,7 +247,7 @@ class ModelGeometry:
 
         if Material is None or ComponentName is None or Type is None or Operation is None or Z is None or \
                 Geometry is None:
-            raise Exception('<AntennaGeometry: AddSequence: One or more parameters are of None type>')
+            raise Exception('<ModelGeometry: AddSequence: One or more parameters are of None type>')
 
         self.__model__['material'].append(Material)
         self.__model__['name'].append(ComponentName)
@@ -297,7 +298,7 @@ class ModelGeometry:
 
         self.__waveguide_port__ = [PortNumber, Orientation, ExcitationDirection, XRange, YRange, ZRange]
 
-    def SimulateModel(self, Parameters=None):
+    def SimulateModel(self, Parameters=None, Rounding=None):
         """
         Description:
         ------------
@@ -308,6 +309,9 @@ class ModelGeometry:
         -----------
         Parameters:                 list
                                     A list of parameters, where each element is of type float.
+        Rounding:                   int
+                                    The rounding for the float value(s) of the Parameter(s)
+                                    (attribute self.__parameter__).
 
         Returns:
         --------
@@ -323,46 +327,49 @@ class ModelGeometry:
             raise Exception('<ModelGeometry: SimulateModel: Parameters is of None type>')
         if self.__waveguide_port__ is None:
             raise Exception('<ModelGeometry: SimulateModel: Waveguide port has not been set up>')
+        if Rounding is None:
+            raise Exception('<ModelGeometry: GenerateRandomParameterValue: Rounding is of type None. '
+                            'Please specify a rounding number>')
 
         # Create a temporary model that will contain only float values for the defined parameters
         __model__ = []
         for __i__ in range(len(self.__model__['material'])):
 
             # Append the current layer/sequence
-            __model__.append([self.__model__['material'][__i__],
-                              self.__model__['name'][__i__],
-                              self.__model__['type'][__i__],
-                              self.__model__['operation'][__i__],
-                              self.__model__['z'][__i__],
-                              self.__model__['geometry'][__i__]])
+            __model__.append([copy.deepcopy(self.__model__['material'][__i__]),
+                              copy.deepcopy(self.__model__['name'][__i__]),
+                              copy.deepcopy(self.__model__['type'][__i__]),
+                              copy.deepcopy(self.__model__['operation'][__i__]),
+                              copy.deepcopy(self.__model__['z'][__i__]),
+                              copy.deepcopy(self.__model__['geometry'][__i__])])
 
             for __j__ in range(len(self.__model__['geometry'][__i__])):
 
                 for __k__ in range(len(self.__parameter__['name'])):
 
                     # Replace any parameter with a string float value
-                    if isinstance(__model__[-1][-1][__j__][0], str):
+                    if __model__[-1][2] == 'brick' and isinstance(__model__[-1][-1][__j__][0], str):
                         __model__[-1][-1][__j__][0] = __model__[-1][-1][__j__][0].replace(
                             self.__parameter__['name'][__k__], str(Parameters[__k__]))
-                    if isinstance(__model__[-1][-1][__j__][1], str):
+                    if __model__[-1][2] == 'brick' and isinstance(__model__[-1][-1][__j__][1], str):
                         __model__[-1][-1][__j__][1] = __model__[-1][-1][__j__][1].replace(
                             self.__parameter__['name'][__k__], str(Parameters[__k__]))
-                    if isinstance(__model__[-1][-1][__j__][2], str):
+                    if __model__[-1][2] == 'brick' and isinstance(__model__[-1][-1][__j__][2], str):
                         __model__[-1][-1][__j__][2] = __model__[-1][-1][__j__][2].replace(
                             self.__parameter__['name'][__k__], str(Parameters[__k__]))
-                    if isinstance(__model__[-1][-1][__j__][3], str):
+                    if __model__[-1][2] == 'brick' and isinstance(__model__[-1][-1][__j__][3], str):
                         __model__[-1][-1][__j__][3] = __model__[-1][-1][__j__][3].replace(
                             self.__parameter__['name'][__k__], str(Parameters[__k__]))
 
                 # Evaluate the geometry component if it is required
-                if isinstance(__model__[-1][-1][__j__][0], str):
-                    __model__[-1][-1][__j__][0] = eval(__model__[-1][-1][__j__][0])
-                if isinstance(__model__[-1][-1][__j__][1], str):
-                    __model__[-1][-1][__j__][1] = eval(__model__[-1][-1][__j__][1])
-                if isinstance(__model__[-1][-1][__j__][2], str):
-                    __model__[-1][-1][__j__][2] = eval(__model__[-1][-1][__j__][2])
-                if isinstance(__model__[-1][-1][__j__][3], str):
-                    __model__[-1][-1][__j__][3] = eval(__model__[-1][-1][__j__][3])
+                if __model__[-1][2] == 'brick' and isinstance(__model__[-1][-1][__j__][0], str):
+                    __model__[-1][-1][__j__][0] = round(eval(__model__[-1][-1][__j__][0]), Rounding)
+                if __model__[-1][2] == 'brick' and isinstance(__model__[-1][-1][__j__][1], str):
+                    __model__[-1][-1][__j__][1] = round(eval(__model__[-1][-1][__j__][1]), Rounding)
+                if __model__[-1][2] == 'brick' and isinstance(__model__[-1][-1][__j__][2], str):
+                    __model__[-1][-1][__j__][2] = round(eval(__model__[-1][-1][__j__][2]), Rounding)
+                if __model__[-1][2] == 'brick' and isinstance(__model__[-1][-1][__j__][3], str):
+                    __model__[-1][-1][__j__][3] = round(eval(__model__[-1][-1][__j__][3]), Rounding)
 
         # Construct the antenna and waveguide port
         self.__simulator__.ConstructAntenna(Model=__model__)
@@ -374,9 +381,9 @@ class ModelGeometry:
                                                   ZRange=self.__waveguide_port__[5])
 
         # Simulate and return the results
-        return self.__simulator__.TimeDomainSolver(SteadyStateLimit=-47)
+        # return self.__simulator__.TimeDomainSolver(SteadyStateLimit=-47)
 
-    def GenerateRandomParameterValue(self, ParameterIndex=None):
+    def GenerateRandomParameterValue(self, Parameters=None, ParameterIndex=None, Rounding=None):
         """
         Description:
         ------------
@@ -387,8 +394,13 @@ class ModelGeometry:
 
         Parameters:
         -----------
+        Parameters:                 list
+                                    A list of float elements that represent the parameters defined by the user.
         ParameterIndex:             int
                                     The index of the parameter to generate a random value from.
+        Rounding:                   int
+                                    The rounding for the float value(s) of the Parameter(s)
+                                    (attribute self.__parameter__).
 
         Returns:
         --------
@@ -400,27 +412,75 @@ class ModelGeometry:
         None.
         """
 
+        if Rounding is None:
+            raise Exception('<ModelGeometry: GenerateRandomParameterValue: Rounding is of type None. '
+                            'Please specify a rounding number>')
+
+        __tries__ = 100
+
         # If a full set of random values are required (usually used for initialization)
         if ParameterIndex is None:
-            __parameter__ = []
-            for __i__ in self.__parameter__['range']:
-                __parameter__.append(
-                    np.random.choice(np.arange(__i__[0],
-                                               __i__[1] + self.__parameter_step_size__,
-                                               self.__parameter_step_size__))
-                )
+            while __tries__ > 0:
+                try:
+                    __parameter__ = []
+
+                    # Generate random parameter value list
+                    for __i__ in self.__parameter__['range']:
+                        __parameter__.append(
+                            round(np.random.choice(np.arange(__i__[0],
+                                                             __i__[1] + self.__parameter_step_size__,
+                                                             self.__parameter_step_size__)), Rounding)
+                        )
+
+                    # Check if the boundary is met
+                    self.CheckBoundary(Parameters=__parameter__, Rounding=Rounding)
+
+                    return __parameter__
+
+                except Exception as __error__:
+                    if self.__debugging__:
+                        print(__error__)
+                    __tries__ -= 1
+
+                if __tries__ == 0:
+                    raise Exception('<ModelGeometry: GenerateRandomParameterValue: The maximum number of tries to '
+                                    'generate random parameter values have been exceeded, check defined antenna model>')
 
         # If a single parameter random float value is required
         else:
-            __parameter__ = np.random.choice(np.arange(
-                self.__parameter__['range'][ParameterIndex][0],
-                self.__parameter__['range'][ParameterIndex][1] + self.__parameter_step_size__,
-                self.__parameter_step_size__)
-            )
+            if Parameters is None:
+                raise Exception('<ModelGeometry: GenerateRandomParameterValue: Parameters is of type None, which '
+                                'is not allowed when a random value is generated for a single parameter>')
 
-        return __parameter__
+            while __tries__ > 0:
+                try:
+                    # Generate a random parameter value
+                    __parameter__ = round(np.random.choice(np.arange(
+                        self.__parameter__['range'][ParameterIndex][0],
+                        self.__parameter__['range'][ParameterIndex][1] + self.__parameter_step_size__,
+                        self.__parameter_step_size__)
+                    ), Rounding)
 
-    def IncrementParameterValue(self, Parameters=None, Index=None):
+                    # Set a temporary parameter list
+                    __temp__ = [__i__ for __i__ in Parameters]
+                    # Replace the parameter index with the randomly generated parameter value
+                    __temp__[ParameterIndex] = __parameter__
+
+                    # Check if the boundary is met
+                    self.CheckBoundary(Parameters=__temp__, Rounding=Rounding)
+
+                    return __parameter__
+
+                except Exception as __error__:
+                    if self.__debugging__:
+                        print(__error__)
+                    __tries__ -= 1
+
+                if __tries__ == 0:
+                    raise Exception('<ModelGeometry: GenerateRandomParameterValue: The maximum number of tries to '
+                                    'generate a random parameter value has been exceeded, check defined antenna model>')
+
+    def IncrementParameterValue(self, Parameters=None, Index=None, Rounding=None):
         """
         Description:
         ------------
@@ -433,6 +493,8 @@ class ModelGeometry:
                                     A list of float values that corresponds to the parameters defined by the user.
         Index:                      int
                                     The index of the parameter Parameters to increment.
+        Rounding:                   int
+                                    The rounding for the float value of the Parameter given the Index parameter.
 
         Returns:
         --------
@@ -443,20 +505,26 @@ class ModelGeometry:
         None.
         """
 
-        # Increment the parameter
-        Parameters[Index] = Parameters[Index] + self.__parameter_step_size__
+        if Rounding is None:
+            raise Exception('<ModelGeometry: IncrementParameterValue: Rounding is of type None. '
+                            'Please specify a rounding number>')
 
-        # Test to see if it is within its range
-        try:
-            self.CheckBoundary(Parameters=Parameters)
+        # Increment the parameter if not out of its defined range
+        if Parameters[Index] + self.__parameter_step_size__ <= self.__parameter__['range'][Index][1]:
+            Parameters[Index] = round(Parameters[Index] + self.__parameter_step_size__, Rounding)
 
-        # Decrement the parameter if it violates its range
-        except Exception as __error__:
-            if self.__debugging__:
-                print(__error__)
-            Parameters[Index] = Parameters[Index] - self.__parameter_step_size__
+            # Test to see if it is within its range
+            try:
+                self.CheckBoundary(Parameters=Parameters)
 
-    def DecrementParameterValue(self, Parameters=None, Index=None):
+            # Decrement the parameter if it violates its range
+            except Exception as __error__:
+                if self.__debugging__:
+                    print(__error__)
+
+                Parameters[Index] = round(Parameters[Index] - self.__parameter_step_size__, Rounding)
+
+    def DecrementParameterValue(self, Parameters=None, Index=None, Rounding=None):
         """
         Description:
         ------------
@@ -469,6 +537,8 @@ class ModelGeometry:
                                     A list of float values that corresponds to the parameters defined by the user.
         Index:                      int
                                     The index of the parameter Parameters to decrement.
+        Rounding:                   int
+                                    The rounding for the float value of the Parameter given the Index parameter.
 
         Returns:
         --------
@@ -479,20 +549,26 @@ class ModelGeometry:
         None.
         """
 
-        # Decrement the parameter
-        Parameters[Index] = Parameters[Index] - self.__parameter_step_size__
+        if Rounding is None:
+            raise Exception('<ModelGeometry: DecrementParameterValue: Rounding is of type None. '
+                            'Please specify a rounding number>')
 
-        # Test to see if it is within its range
-        try:
-            self.CheckBoundary(Parameters=Parameters)
+        # Decrement the parameter if not out of its defined range
+        if Parameters[Index] - self.__parameter_step_size__ >= self.__parameter__['range'][Index][0]:
+            Parameters[Index] = round(Parameters[Index] - self.__parameter_step_size__, Rounding)
 
-        # Increment the parameter if it violates its range
-        except Exception as __error__:
-            if self.__debugging__:
-                print(__error__)
-            Parameters[Index] = Parameters[Index] + self.__parameter_step_size__
+            # Test to see if it is within its range
+            try:
+                self.CheckBoundary(Parameters=Parameters)
 
-    def CheckBoundary(self, Parameters):
+            # Increment the parameter if it violates its range
+            except Exception as __error__:
+                if self.__debugging__:
+                    print(__error__)
+
+                Parameters[Index] = round(Parameters[Index] + self.__parameter_step_size__, Rounding)
+
+    def CheckBoundary(self, Parameters, Rounding=None):
         """
         Description:
         ------------
@@ -502,6 +578,8 @@ class ModelGeometry:
         -----------
         Parameters:                 list
                                     A list of float values that corresponds to the parameters defined by the user.
+        Rounding:                   int
+                                    The rounding for the float values of the Parameters parameter.
 
         Returns:
         --------
@@ -513,46 +591,75 @@ class ModelGeometry:
         None.
         """
 
+        if Rounding is None:
+            raise Exception('<ModelGeometry: CheckBoundary: Rounding is of type None. '
+                            'Please specify a rounding number>')
+
         __geometry__ = []
 
         for __i__ in range(len(self.__model__['geometry'])):
-            # If any of the geometry component components are of str type, proceed for boundary checks
-            if isinstance(self.__model__['geometry'][__i__][0], str) or \
-                    isinstance(self.__model__['geometry'][__i__][1], str) or \
-                    isinstance(self.__model__['geometry'][__i__][2], str) or \
-                    isinstance(self.__model__['geometry'][__i__][3], str):
-                __temp__ = [self.__model__['geometry'][__i__][0],
-                            self.__model__['geometry'][__i__][1],
-                            self.__model__['geometry'][__i__][2],
-                            self.__model__['geometry'][__i__][3]]
 
-                # Replace any parameter names with Parameter[__j__] value
-                for __j__ in self.__parameter__:
-                    if isinstance(__temp__[0], str):
-                        __temp__[0] = __temp__[0].replace(__j__['name'][__j__], Parameters[__j__])
-                    if isinstance(__temp__[1], str):
-                        __temp__[1] = __temp__[1].replace(__j__['name'][__j__], Parameters[__j__])
-                    if isinstance(__temp__[2], str):
-                        __temp__[2] = __temp__[2].replace(__j__['name'][__j__], Parameters[__j__])
-                    if isinstance(__temp__[3], str):
-                        __temp__[3] = __temp__[3].replace(__j__['name'][__j__], Parameters[__j__])
+            # Proceed if and only if the layer/sequence is a 'brick' type
+            if self.__model__['type'][__i__] == 'brick':
+                for __j__ in range(len(self.__model__['geometry'][__i__])):
 
-                # If the element within __temp__ is a string, evaluate it
-                if isinstance(__temp__[0], str):
-                    __temp__[0] = eval(__temp__[0])
-                if isinstance(__temp__[1], str):
-                    __temp__[1] = eval(__temp__[1])
-                if isinstance(__temp__[2], str):
-                    __temp__[2] = eval(__temp__[2])
-                if isinstance(__temp__[3], str):
-                    __temp__[3] = eval(__temp__[3])
+                    # If any of the geometry component components are of str type, proceed for boundary checks
+                    if (isinstance(self.__model__['geometry'][__i__][__j__][0], str) or
+                            isinstance(self.__model__['geometry'][__i__][__j__][1], str) or
+                            isinstance(self.__model__['geometry'][__i__][__j__][2], str) or
+                            isinstance(self.__model__['geometry'][__i__][__j__][3], str)):
 
-                # Compare the limits found from __temp__ with self.__explore_space__ variable
-                for __j__ in self.__explore_space__:
-                    # If a z range match has been found, proceed
-                    if self.__model__['z'][__i__][0] == __j__[0][0] and self.__model__['z'][__i__][1] == __j__[0][1]:
-                        if __temp__[0] < __j__[1][0] or __temp__[1] > __j__[1][1] or __temp__[2] < __j__[1][2] or \
-                                __temp__[3] > __j__[1][3]:
-                            raise Exception(f'<ModelGeometry: CheckBoundary: A geometry component with parameters, '
-                                            f'specifically {self.__model__["geometry"][__i__]}, is out of bounds for '
-                                            f'explore space {__j__}>')
+                        __temp__ = [self.__model__['geometry'][__i__][__j__][0],
+                                    self.__model__['geometry'][__i__][__j__][1],
+                                    self.__model__['geometry'][__i__][__j__][2],
+                                    self.__model__['geometry'][__i__][__j__][3]]
+
+                        # Replace any parameter names with Parameter[__k__] value
+                        for __k__ in range(len(self.__parameter__['name'])):
+                            if isinstance(__temp__[0], str):
+                                __temp__[0] = __temp__[0].replace(self.__parameter__['name'][__k__],
+                                                                  str(Parameters[__k__]))
+                            if isinstance(__temp__[1], str):
+                                __temp__[1] = __temp__[1].replace(self.__parameter__['name'][__k__],
+                                                                  str(Parameters[__k__]))
+                            if isinstance(__temp__[2], str):
+                                __temp__[2] = __temp__[2].replace(self.__parameter__['name'][__k__],
+                                                                  str(Parameters[__k__]))
+                            if isinstance(__temp__[3], str):
+                                __temp__[3] = __temp__[3].replace(self.__parameter__['name'][__k__],
+                                                                  str(Parameters[__k__]))
+
+                        # If the element within __temp__ is a string, evaluate it
+                        if isinstance(__temp__[0], str):
+                            __temp__[0] = eval(__temp__[0])
+                        if isinstance(__temp__[1], str):
+                            __temp__[1] = eval(__temp__[1])
+                        if isinstance(__temp__[2], str):
+                            __temp__[2] = eval(__temp__[2])
+                        if isinstance(__temp__[3], str):
+                            __temp__[3] = eval(__temp__[3])
+
+                        # Round the geometry component values to Rounding decimals
+                        __temp__[0] = round(__temp__[0], Rounding)
+                        __temp__[1] = round(__temp__[1], Rounding)
+                        __temp__[2] = round(__temp__[2], Rounding)
+                        __temp__[3] = round(__temp__[3], Rounding)
+
+                        # Compare the limits found from __temp__ with self.__explore_space__ variable
+                        for __k__ in self.__explore_space__:
+
+                            # Round the current explore space and z-range to Rounding decimals
+                            __explore_space__ = [round(__l__, Rounding) for __l__ in __k__]
+                            __z__ = [round(self.__model__['z'][__i__][0], Rounding),
+                                     round(self.__model__['z'][__i__][1], Rounding)]
+
+                            # If a z range match has been found, proceed
+                            if __z__[0] == __explore_space__[4] and __z__[1] == __explore_space__[5]:
+                                # If __temp__[0] is less than x minimum or __temp__[1] is greater than x maximum,
+                                # or __temp__[2] is less than y minimum or __temp__[3] is greater than y maximum, raise
+                                # an exception
+                                if __temp__[0] < __explore_space__[0] or __temp__[1] > __explore_space__[1] or \
+                                        __temp__[2] < __explore_space__[2] or __temp__[3] > __explore_space__[3]:
+                                    raise Exception(f'<ModelGeometry: CheckBoundary: A geometry component with '
+                                                    f'parameters, specifically {self.__model__["geometry"][__i__]}, '
+                                                    f'is out of bounds for explore space {__explore_space__}>')

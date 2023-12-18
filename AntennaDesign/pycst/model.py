@@ -310,7 +310,7 @@ def brick(mws, name, component, material, xrange, yrange, zrange):
         Brick.xrange(str(xrange[0]), str(xrange[1]))
         Brick.yrange(str(yrange[0]), str(yrange[1]))
         Brick.zrange(str(zrange[0]), str(zrange[1]))
-        Brick.Create
+        Brick.Create()
 
         format(Brick)
 
