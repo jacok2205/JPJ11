@@ -2,8 +2,7 @@ from AntennaDesign.misc import RectangularMicrostripPatch, MicrostripTransmissio
 from AntennaDesign.filing import Filing
 from AntennaDesign.antennaGeometry import ModelGeometry
 from AntennaDesign.simulator import FineModel
-import numpy as np
-import time
+from AntennaDesign.ga import SearchSpaceOptimizer as GA
 
 if __name__ == '__main__':
     # Conventional antenna design dimensions
@@ -82,7 +81,7 @@ if __name__ == '__main__':
     #                                  YRange=waveguide[4], ZRange=waveguide[5])
     # print(simulator.TimeDomainSolver(SteadyStateLimit=-40))
 
-    antenna = ModelGeometry(ParameterStepSize=0.5,
+    antenna = ModelGeometry(ParameterStepSize=1.0,
                             Objectives=[[2.36, 2.44, 0.023]],
                             Simulator=simulator,
                             ExploreSpace=[[-11, 11, -5, 10, 0.535, 0.57], [-12, 12, -9.5, 8, 0, 0.035]],
@@ -102,14 +101,29 @@ if __name__ == '__main__':
                             Geometry=__i__[5])
     antenna.SetWaveguidePort(PortNumber=waveguide[0], Orientation=waveguide[1], ExcitationDirection=waveguide[2], XRange=waveguide[3],
                              YRange=waveguide[4], ZRange=waveguide[5])
-    params = antenna.GenerateRandomParameterValue(Parameters=None, ParameterIndex=None, Rounding=6)
-    num = 0
-    while True:
-        num += 1
-        print(f'\r{params} \t {num}')
-        params = antenna.GenerateRandomParameterValue(Parameters=None, ParameterIndex=None, Rounding=6)
-        temp = antenna.GenerateRandomParameterValue(Parameters=params, ParameterIndex=np.random.choice(range(len(params))), Rounding=6)
-        antenna.SimulateModel(Parameters=params, Rounding=6)
-        time.sleep(10)
-        print(temp)
+
+    filing = Filing(Debugging=True)
+
+    SSO = GA(PopulationSize=12,
+             NumberOfOffspring=6,
+             CrossoverRate=0.5,
+             MutationRate=0.1,
+             modelGeometry=antenna,
+             Filing=filing,
+             Directory='Test',
+             Rounding=6,
+             Debugging=False)
+
+    SSO.Search(SearchTimeMinutes=60 * 24 * 4)
+
+    # params = antenna.GenerateRandomParameterValue(Parameters=None, ParameterIndex=None, Rounding=6)
+    # num = 0
+    # while True:
+    #     num += 1
+    #     params = antenna.GenerateRandomParameterValue(Parameters=None, ParameterIndex=None, Rounding=6)
+    #     print(f'\r{params} \t {num}')
+    #     temp = antenna.GenerateRandomParameterValue(Parameters=params, ParameterIndex=np.random.choice(range(len(params))), Rounding=6)
+    #     antenna.SimulateModel(Parameters=params, Rounding=6)
+    #     time.sleep(10)
+    #     print(temp)
     # END

@@ -413,7 +413,7 @@ def time_domain_solver(mws, steadyStateLimit):
         # solver.FullDeembedding('False')
         # solver.SuperimposePLWExcitation('False')
         # solver.UseSensitivityAnalysis('False')
-        # solver.MaximumNumberOfThreads('12')
+        solver.MaximumNumberOfThreads('12')
         solver.Start
 
         return 0

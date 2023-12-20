@@ -1,46 +1,165 @@
-"""
-    Description:
-    ------------
-    An evolutionary algorithm that has been adapted to work with individuals that are compatible for CST Studio Suite
-    simulations. All the typical operators (population initialization, fitness evaluation, selection, crossover,
-    and mutation) are used, but how they are executed is not typical.
-
-    Global Variables:
-    -----------------
-    None.
-
-    Imports:
-    --------
-    __init__:                   The initialization module for the package.
-    __config__:                 Global variables to access from, according to what was configured from the user.
-
-    Notes:
-    ------
-    None.
-"""
-
+# The initialization module for the package AntennaDesign, which will be a list of common public libraries,
+# see AntennaDesign.__init__ for more information
 from AntennaDesign.__init__ import *
 
 
 class SearchSpaceOptimizer:
-    def __init__(self, PopulationSize=12, NumberOfOffspring=6, CrossoverRate=0.5,
-                 MutationRate=0.05, modelGeometry=None, Filing=None, Directory=None, Debugging=False):
+    """
+    Description:
+    ------------
+    Based on the genetic algorithm, this class uses the defined antenna geometry, filing, and simulator to explore for
+    the best possible solution.
+
+    Attributes:
+    -----------
+    __directory__:                  str
+                                    A string representing the directory for the instance of this class to store results.
+    __files__:                      list
+                                    A list that contains file names to create, write, and read from. The following files
+                                    are used: 'Temp', 'Explored', 'Best', and 'Fitness'.
+    __population_size__:            int
+                                    The population size defined by the user.
+    __number_of_offspring__:        int
+                                    The number of offspring to generate per generation.
+    __crossover_rate__:             float
+                                    The crossover rate for the crossover operation of the genetic algorithm and is in
+                                    the range of 0.0 to 1.0.
+    __mutation_rate__:              float
+                                    The mutation rate for the mutation operation of the genetic algorithm and is in
+                                    the range of 0.0 to 1.0.
+    __rounding__:                   int
+                                    Used for rounding the parameter values per individual.
+    __pool__:                       list
+                                    A list that contains all the individuals of the population for the current
+                                    generation. Both the parameter values/combination and simulation results are stored
+                                    per individual.
+    __pool_fitness__:               list
+                                    A list that contains the fitness values, after evaluation of each individual, of
+                                    the current generation.
+    __pool_index__:                 list
+                                    A list that contains the indices, from the __pool__ attribute, of the fittest
+                                    individuals from the current generation.
+    __offspring__:                  list
+                                    A list that contains all the children of the offspring generated from the current
+                                    generation.
+    __offspring_fitness__:          list
+                                    A list that contains the fitness values, after evaluation of each child, of the
+                                    current generation.
+    __individual__:                 ModelGeometry
+                                    The geometry of the antenna model defined by the user.
+    __filing__:                     Filing
+                                    Used for writing, reading, appending, deleting data for later use.
+    __debugging__:                  bool
+                                    For debugging purposes (developer mode).
+
+    Methods:
+    --------
+    __init__(PopulationSize=12, NumberOfOffspring=6, CrossoverRate=0.5, MutationRate=0.05,
+                 modelGeometry=None, Filing=None, Directory=None, Rounding=None, Debugging=False):
+                                    The constructor of the class, where the PopulationSize, NumberOfOffspring,
+                                    CrossoverRate, MutationRate, modelGeometry, and Rounding must be given as
+                                    arguments. The genetic algorithm is initialized if all required parameters are
+                                    correct.
+    Search(SearchTimeMinutes=60, Convergence=None):
+                                    Used for initiating the genetic algorithm to begin the search for an optimal
+                                    solution.
+    _generate_offspring():
+                                    Generates new offspring given the process of the genetic algorithm
+    _populate_simulation_results(Pool=True):
+                                    Simulates all the individuals/children in the population/offspring.
+    _initialize_population():
+                                    Initializes the population given the parameters that have been defined by the user.
+    _evaluate_individual(__simulation_result__=None):
+                                    The fitness function of the genetic algorithm, which only evaluates the return loss
+                                    and gain responses for this current build.
+    _select_parents():
+                                    Selects the parents for generating offspring. The better the fitness value an
+                                    individual has, the better the chance it will be selected for breeding.
+    _crossover():
+                                    Performs a crossover given the selected parents. Note that the crossover is
+                                    dependent of the crossover rate defined by the user.
+    _mutation():
+                                    Performs a possible mutation per child before each child is simulated and evaluated.
+
+    Notes:
+    ------
+    None.
+    """
+
+    def __init__(self, PopulationSize=12, NumberOfOffspring=6, CrossoverRate=0.5, MutationRate=0.05,
+                 modelGeometry=None, Filing=None, Directory=None, Rounding=None, Debugging=False):
+        """
+        Description:
+        ------------
+        The constructor of the ModelGeometry class. It expects five parameters as arguments, specifically the
+        PopulationSize, NumberOfOffspring, CrossoverRate, MutationRate, modelGeometry, and Rounding. The population
+        is then initialized either as a new first generation, if no history has been found in the Filing directory,
+        or extracts the individuals from the Best file.
+
+        Parameters:
+        -----------
+        PopulationSize:             int
+                                    The size of the population for the genetic algorithm.
+        NumberOfOffspring:          int
+                                    The number of offspring to generate per generation.
+        CrossoverRate:              float
+                                    The crossover rate between two parents and has the range of 0.0 to 1.0.
+        MutationRate:               float
+                                    The mutation rate that a child will undergo mutation and has the range of 0.0 to
+                                    1.0.
+        modelGeometry:              ModelGeometry
+                                    The geometry of the antenna defined by the user for the genetic algorithm to exploit
+                                    given the parameters defined by the user.
+        Filing:                     Filing
+                                    The results that are stored using the Filing class for reading, writing, appending,
+                                    and deleting files.
+        Directory:                  str
+                                    Should the user wish to define a unique directory for his/her current antenna
+                                    geometry, this should be named something meaningful.
+        Rounding:                   int
+                                    The rounding that needs to be defined by the user. 0 represents no decimal places,
+                                    1 represents one decimal place, etcetera. This is used from the ModelGeometry
+                                    class.
+        Debugging:                  bool
+                                    For debugging purposes (developer mode).
+
+        Returns:
+        --------
+        None.
+
+        Notes:
+        ------
+        None.
+        """
+
         if modelGeometry is None:
             raise Exception('<SearchSpaceOptimizer: __init__: AntennaGeometry and/or cstSimulation objects are '
                             'of type None>')
+        if Filing is None:
+            raise Exception('<SearchSpaceOptimizer: __init__: Filing is of None type, it must be of Filing type>')
+        if Rounding is None:
+            raise Exception('<SearchSpaceOptimizer: __init__: Rounding is of None type, please specify a rounding '
+                            'number>')
+
         # The first element is the directory, where the rest of the elements are the file names that will be used
         # by this class
         if Directory is None:
             self.__directory__ = ['\\SSO\\']
         else:
             self.__directory__ = ['\\SSO\\' + Directory + '\\']
+
+        # Files that will be used by the genetic algorithm
         self.__files__ = [self.__directory__[0] + 'Temp', self.__directory__[0] + 'Explored',
                           self.__directory__[0] + 'Best', self.__directory__[0] + 'Fitness']
+
+        # Genetic algorithm parameters
         self.__population_size__ = PopulationSize
         self.__number_of_offspring__ = NumberOfOffspring
         self.__crossover_rate__ = CrossoverRate
         self.__mutation_rate__ = MutationRate
-        self.__debugging__ = Debugging
+        self.__rounding__ = Rounding
+
+        # Generation parameters
         self.__pool__ = []
         self.__pool_fitness__ = []
         self.__pool_index__ = []
@@ -51,39 +170,67 @@ class SearchSpaceOptimizer:
         self.__individual__ = modelGeometry
         self.__filing__ = Filing
 
+        # For debugging (developer mode)
+        self.__debugging__ = Debugging
+
         # Create directories
         self.__filing__.CreateDirectories(Directories=self.__directory__)
+
+        # Create file(s)
+        for __i__ in self.__files__:
+            self.__filing__.CreateFile(Filename=__i__)
 
         # Initialize the population
         self._initialize_population()
 
-    def Search(self, SearchTimeMinutes=60, GainFitness=False, Convergence=None):
+    def Search(self, SearchTimeMinutes=60, Convergence=None):
+        """
+        Description:
+        ------------
+        Begins the genetic algorithm search. The user must define the duration, in minutes, that the genetic algorithm
+        will be searching for. Additionally, the user may also define the convergence criteria, which will simply be
+        the convergence value of the best fitness from the population.
+
+        Parameters:
+        -----------
+        SearchTimeMinutes:          float
+                                    The amount of time the genetic algorithm is allowed to search (in minutes).
+        Convergence:                float
+                                    The convergence value that will stop the search if met.
+
+        Returns:
+        --------
+        None.
+
+        Notes:
+        ------
+        None.
+        """
 
         # Begin timer
         __start__ = time.time() / 60
 
-        for __i__ in self.__files__:
-            self.__filing__.CreateFile(Filename=__i__)
-
-        # Initializing generation n's pool
+        # Get simulation results for the pool (if required)
         self._populate_simulation_results(Pool=True)
 
         # Attempt to retrieve the offspring from the Temp file
         self.__offspring__ = self.__filing__.Read(Filename=self.__files__[0])
 
-        # The temp file does not exist or is corrupt
-        if isinstance(self.__offspring__, int) and self.__offspring__ == -1 or \
-                isinstance(self.__offspring__, list) and len(self.__offspring__) != self.__number_of_offspring__:
+        # The temp file does not exist or is corrupt, generate a new set of offspring
+        if not isinstance(self.__offspring__, list) or (isinstance(self.__offspring__, list) and
+                                                        len(self.__offspring__) != self.__number_of_offspring__):
             self._generate_offspring()
 
-        if len(self.__pool_fitness__) == 0:
+        # Evaluate pool fitness if the list is not the same size as the defined self.__pool__
+        if len(self.__pool_fitness__) != len(self.__pool__):
             self.__pool_fitness__ = [self._evaluate_individual(__simulation_result__=__i__[1])
                                      for __i__ in self.__pool__]
 
         while True:
+            # Timer for noting the duration of time taken per generation
             __loop_time__ = time.time() / 60
 
-            # Simulate remaining offspring to simulate
+            # Simulate remaining offspring that require simulation(s)
             self._populate_simulation_results(Pool=False)
 
             # Evaluate offspring
@@ -92,18 +239,23 @@ class SearchSpaceOptimizer:
 
             # Select which individuals between the pool and offspring to choose from according to their
             # fitness values. The selection will be based on the strength of their fitness values in the
-            # form of a probability value
+            # form of a probability value; the lower the fitness value, the higher the chance of being
+            # selected for the next generation
             __new_generation__ = []
-            if GainFitness:
-                __pool_fitness__ = [__i__[0] + __i__[1] for __i__ in self.__pool_fitness__]
-                __offspring_fitness__ = [__i__[0] + __i__[0] for __i__ in self.__offspring_fitness__]
-            else:
-                __pool_fitness__ = [__i__[0] for __i__ in self.__pool_fitness__]
-                __offspring_fitness__ = [__i__[0] for __i__ in self.__offspring_fitness__]
+            __pool_fitness__ = [__i__[0] + __i__[1] for __i__ in self.__pool_fitness__]
+            __offspring_fitness__ = [__i__[0] + __i__[1] for __i__ in self.__offspring_fitness__]
+            __best_minimum__ = 9e12
 
             for __i__ in range(self.__population_size__):
 
                 __min_at_pool__ = True
+
+                # Get the best possible fitness value between the pool and offspring; this will be used for
+                # printing progress on the terminal
+                if min(__pool_fitness__) > __best_minimum__:
+                    __best_minimum__ = min(__pool_fitness__)
+                if min(__offspring_fitness__) > __best_minimum__:
+                    __best_minimum__ = min(__offspring_fitness__)
 
                 if min(__pool_fitness__) < min(__offspring_fitness__):
                     __min__ = __pool_fitness__.index(min(__pool_fitness__))
@@ -126,6 +278,9 @@ class SearchSpaceOptimizer:
                     __new_generation__.append(self.__offspring__[__min__])
                     __offspring_fitness__[__min__] = 9e12
 
+            # Save the evaluation results (fitness values) of the population
+            self.__filing__.Append(Filename=self.__files__[3], List=self.__pool_fitness__)
+
             # Update pool to new generation
             self.__pool__ = __new_generation__
 
@@ -135,27 +290,45 @@ class SearchSpaceOptimizer:
             # Generate new offspring
             self._generate_offspring()
 
-            print(f'Sweep completed in {round(time.time() / 60 - __loop_time__, 2)} minutes')
+            print(f'Sweep completed in {round(time.time() / 60 - __loop_time__, 2)} minutes.', end='')
+            if Convergence is None:
+                print(f' Remaining time: {round(time.time() / 60 - SearchTimeMinutes, 2)} minutes.')
+            else:
+                print(f' Current best fitness is {__best_minimum__}, where the defined convergence is {Convergence}.')
 
-            if Convergence is None and (time.time() / 60 - __start__) < SearchTimeMinutes:
+            if Convergence is None and (time.time() / 60 - __start__) > SearchTimeMinutes:
                 break
-            elif Convergence is not None and GainFitness is True and \
-                    self.__offspring_fitness__[0][0] + self.__offspring_fitness__[0][1] <= Convergence:
-                break
-            elif Convergence is not None and GainFitness is False and \
-                    self.__offspring_fitness__[0][0] <= Convergence:
+            elif Convergence is not None and __best_minimum__ <= Convergence:
                 break
             else:
                 pass
 
     def _generate_offspring(self):
+        """
+        Description:
+        ------------
+        Generates the offspring of the current generation. The full process is performed within this method,
+        specifically selecting the parents, performing the crossover, and then performing the mutation of the
+        offspring.
+
+        Parameters:
+        -----------
+        None.
+
+        Returns:
+        --------
+        None.
+
+        Notes:
+        ------
+        None.
+        """
+
         # Delete content in Temp file
         self.__filing__.DeleteContent(Filename=self.__files__[0])
         # Evaluate pool
         self.__pool_fitness__ = [self._evaluate_individual(__simulation_result__=__i__[1])
                                  for __i__ in self.__pool__]
-        # Save the evaluation results (fitness values)
-        self.__filing__.Append(Filename=self.__files__[3], List=self.__pool_fitness__)
         # Select parents
         self._select_parents()
         # Crossover
@@ -166,6 +339,29 @@ class SearchSpaceOptimizer:
         self.__filing__.Save(Filename=self.__files__[0], Lists=self.__offspring__)
 
     def _populate_simulation_results(self, Pool=True):
+        """
+        Description:
+        ------------
+        Simulates individuals/children that need simulating. Note that any individuals/children that have already
+        been simulated does not get simulated as it is not needed. Also, if the individual/child has a matching
+        parameter value set from the Explored file, the simulation result from that specific individual within the
+        Explored file gets used for the individual/child. In other words, if the individual/child does not have a
+        unique parameter value set, it does not go through the CST simulator.
+
+        Parameters:
+        -----------
+        Pool:                       bool
+                                    If True, the population is simulated, else the offspring is simulated.
+
+        Returns:
+        --------
+        None.
+
+        Notes:
+        ------
+        None.
+        """
+
         if Pool:
             __pool__ = self.__pool__
             __file__ = self.__files__[2]
@@ -173,84 +369,73 @@ class SearchSpaceOptimizer:
             __pool__ = self.__offspring__
             __file__ = self.__files__[0]
 
-        # Simulate remaining offspring to simulate
+        # Simulate remaining individuals/children
         for __i__ in range(len(__pool__)):
             if not len(__pool__[__i__][1]):
-                __temp__ = self.__filing__.Duplicate(Filename=self.__files__[1], List=__pool__[__i__][0])
+                # Get possible simulation result so that CST is not needed
+                __temp__ = self.__filing__.Duplicate(Filename=self.__files__[1], List=__pool__[__i__])
+
+                # Duplicate not found, which means that the current individual/child is unique. Thus, simulate its
+                # parameters
                 if not isinstance(__temp__, list):
-                    self.__pool__[__i__][1] = \
-                        self.__individual__.SimulateModel(Parameters=__pool__[__i__][0][0],
-                                                          XYOffset=__pool__[__i__][0][1])
+                    __pool__[__i__][1] = \
+                        self.__individual__.SimulateModel(Parameters=__pool__[__i__][0], Rounding=self.__rounding__)
                     self.__filing__.Append(Filename=self.__files__[1], List=__pool__[__i__])
+
+                # Duplicate found, assign the __temp__ to the individual/child
                 else:
-                    __pool__[__i__][1] = __temp__
+                    __pool__[__i__] = __temp__
+
+                # Update Best/Temp file
                 self.__filing__.Save(Filename=__file__, Lists=__pool__)
 
+        # Update pool
         if Pool:
             self.__pool__ = __pool__
+
+        # Update offsprings
         else:
             self.__offspring__ = __pool__
 
     def _initialize_population(self):
-
         """
         Description:
         ------------
-        Generates a population from the given rules and information provided from the __config__ module.
+        Initializes the population by either generating a new set of individuals or by extracting the individuals from 
+        the Best file (if present and has the correct number of individuals).s
 
         Parameters:
         -----------
         None.
 
-        Return:
-        -------
+        Returns:
+        --------
         None.
 
         Notes:
         ------
-        Chromosome format\n
-        Type: list
-
-        Individual layout:      list
-                                [layer0, layer1, layer2].
-        layer_n:                list
-                                [material_name, solid_name, component_name, height_range/z_range, geometry_list].
-        material_name:          str
-                                Name of material from CST Studio Suite material library.
-        solid_name:             str
-                                Name of solid that will inherit the component_name variable.
-        component_name:         str
-                                Name of component that solid_name belongs to.
-        height_range/z_range:   list
-                                A 1-D array with only two elements, the height minimum and the height maximum of
-                                layer_n.
-        geometry_list:          list
-                                A 2-D array, where each element contains a 1-D array of the [x_min, x_max, y_min, y_max]
-                                values per solid. In other words, each element of xy_range contains a 1-D array of solid
-                                dimensions information, which are the xrange and yrange values in the form as
-                                [x_min, x_max, y_min, y_max].
-
+        None.
         """
 
         __temp__ = self.__filing__.Read(Filename=self.__files__[2])
 
-        if not isinstance(__temp__, list) and __temp__ == -1 or isinstance(__temp__, list) and \
-                len(__temp__) != self.__population_size__:
+        # Create a new initial population if either one has not been created before or the number of individuals
+        # does not match the population size
+        if (not isinstance(__temp__, list) and __temp__ == -1) or (isinstance(__temp__, list) and
+                                                                   len(__temp__) != self.__population_size__):
             self.__pool__ = []
 
             for __i__ in range(self.__population_size__):
-                # Create individual.
-                self.__pool__.append([[[], []], []])
+                # Create individual
+                self.__pool__.append([[], []])
 
-                # Populate initial parameters
-                for __j__ in self.__individual__.__parameter__['value']:
-                    self.__pool__[-1][0][0].append(__j__)
-
-                # Get random x/y offset
-                self.__pool__[-1][0][1] = self.__individual__.GenerateRandomOffsets()
+                # Generate a random set of parameter values
+                self.__pool__[-1][0] = self.__individual__.GenerateRandomParameterValue(Rounding=self.__rounding__)
 
             self.__filing__.Save(Filename=self.__files__[2], Lists=self.__pool__)
 
+        # Assign the pool attribute to the __temp__ variable if there exists a population with the correct
+        # number of individuals
         else:
             self.__pool__ = __temp__
 
@@ -258,26 +443,20 @@ class SearchSpaceOptimizer:
         """
         Description:
         ------------
-        THE FUNCTIONS EXPECTS A LIST OF LISTS, WHERE THE FIRST LIST IS THE S11 RESPONSES AND THE LAST LIST IS THE
-        GAIN RESPONSES. BOTH LISTS HAVE THEIR OWN FREQUENCY RANGES
-        Calculates the fitness value of a given individual with the configured self.__individual__.__objective__ variable. The
-        desired fitness function is to allow for the individual's fitness value to ideally be 0.0. This happens when the
-        edge bands are subtracted by the desired band edges, which will guide the evolutionary algorithm to converge to
-        0.0. This can be almost described as a 'gradient descent'. Thus, the 'sweet' spot for the fitness value is  0.0.
-        A bias value will be added for the condition where the fitness value appears good, but has one or more bands than
-        the desired number of band(s). Thus, the bias will simply be the difference between the actual number of bands with
-        the desired number of bands.
+        Evaluates the individual/child by analysing its simulation results. This is the core of the genetic algorithm
+        as a bad fitness function deems the genetic algorithm as useless. Only the return loss and gain responses are
+        analysed for this current build.
 
         Parameters:
         -----------
-        __S11_result__:     list
-                            A list with a format of [[freq elements], [S11 elements]] and is from the CST simulation
-                            results.
+        __simulation_result__:      list
+                                    A list that contains two lists, the first list is the return loss responses and
+                                    the last list contains the gain responses. Each list has its own frequency range
+                                    that correlate to the response.
 
-        Return:
-        -------
-        Returns a fitness value of type float that is calculated from the given individual's __S11_result__ list and is
-        always positive.
+        Returns:
+        --------
+        Returns the return loss and gain fitness values, as a list of two elements, of the individual/child.
 
         Notes:
         ------
@@ -297,124 +476,138 @@ class SearchSpaceOptimizer:
         # Evaluation of gain responses over a specified frequency range
         __gain_freq__ = __simulation_result__[1][0]             # Frequency range specified for the gain responses
         __gain__ = __simulation_result__[1][1]                  # The gain responses over the specified frequency range
-        __target_gain__ = self.__individual__.__objective__[4]  # The gain that should be met, or higher
 
-        # Determine the number of actual bands under the specified self.__individual__.__objective__[1] variable
+        # Determine the number of actual bands under the specified self.__individual__.__objective__ variable
         while __index__ < len(__s11__):
 
-            # If a lower edge frequency is found that is lower than the specified
-            # self.__individual__.__objective__[1] variable
-            if __s11__[__index__] <= self.__individual__.__objective__[1]:
+            # If a lower edge frequency is found that is lower than -10 dB
+            if __s11__[__index__] <= -10:
                 # Append possible band n
                 __number_of_bands__.append([])
+                __minimum_return_loss__ = __s11__[__index__]
 
-                # Append lower edge frequency and S11 value associated with the lower edge frequency of band n
+                # Append lower edge frequency
                 __number_of_bands__[-1].append(__s11_freq__[__index__])
-                __number_of_bands__[-1].append(__s11__[__index__])
 
                 # Determine the upper edge frequency of band n by incrementing __index__ until the upper edge
                 # frequency has been found
-                while (__index__ + 1) < len(__s11__) and __s11__[__index__ + 1] < \
-                        self.__individual__.__objective__[1]:
+                while (__index__ + 1) < len(__s11__) and __s11__[__index__ + 1] < -10:
+                    if __minimum_return_loss__ > __s11__[__index__]:
+                        __minimum_return_loss__ = __s11__[__index__]
                     __index__ += 1
 
-                # Append upper edge frequency and S11 value associated with the upper edge frequency
+                # Append upper edge frequency and minimum return loss value (mode of operation)
                 __number_of_bands__[-1].append(__s11_freq__[__index__])
-                __number_of_bands__[-1].append(__s11__[__index__])
+                __number_of_bands__[-1].append(__minimum_return_loss__)
             __index__ += 1
 
-        # If no bands were found under the condition of self.__individual__.__objective__[1] variable. This is
-        # considered as a solution which is the worst solution
+        # If no bands were found is considered as the worst solution
         if len(__number_of_bands__) == 0:
-            for __i__ in self.__individual__.__objective__[2]:
+            for __i__ in self.__individual__.__objective__:
                 __s11_fitness__ += abs(__i__[0] + __i__[1]) * 9e9
+            __gain_fitness__ = 1 / 10 ** (-80/10)
 
-        # If at least one band has been found under the condition of self.__individual__.__objective__[1]
+            return [__s11_fitness__, __gain_fitness__]
+
+        # If at least one band has been found under the condition of self.__individual__.__objective__
         else:
             # Iterate through the band(s) that were found
             for __i__ in range(len(__number_of_bands__)):
 
                 # Collect all fitness values from current band that was found and choose the fitness value that is
                 # the lowest, which is the best fitness value possible for the number of specified bands in
-                # self.__individual__.__objective__[0]
+                # self.__individual__.__objective__
                 __fitness_temp__ = []
-                for __j__ in range(len(self.__individual__.__objective__[2])):
-                    __fitness_temp__.append(
-                        abs(__number_of_bands__[__i__][0] - self.__individual__.__objective__[2][__j__][0]) +
-                        abs(__number_of_bands__[__i__][2] - self.__individual__.__objective__[2][__j__][1])
-                    )
+                for __j__ in range(len(self.__individual__.__objective__)):
 
-                    # If any of the band edges are within the self.__individual__.__objective__[2] band(s) edges
-                    # (+/- the allowed band edge tolerance from self.__individual__.__objective__[3]), divide the
-                    # current band's minimum S11 value, which is the band's resonant frequency, with the above
-                    # append operation. All is checked with the tolerance element from
-                    # self.__individual__.__objective__[3][__j__]. For the __S11_min__ value, the absolute value
-                    # will be taken
                     __lower_freq__ = __number_of_bands__[__i__][0]
-                    __upper_freq__ = __number_of_bands__[__i__][2]
+                    __upper_freq__ = __number_of_bands__[__i__][1]
 
-                    if (self.__individual__.__objective__[2][__j__][0] *
-                        (1 - self.__individual__.__objective__[3][__j__])) <= __lower_freq__ <= \
-                            (self.__individual__.__objective__[2][__j__][0] *
-                             (1 + self.__individual__.__objective__[3][__j__])) and \
-                            (self.__individual__.__objective__[2][__j__][1] *
-                             (1 - self.__individual__.__objective__[3][__j__])) <= \
-                            __upper_freq__ <= (self.__individual__.__objective__[2][__j__][1] *
-                                               (1 + self.__individual__.__objective__[3][__j__])):
+                    # If the current band is within the objective band, perform a reward
+                    if (self.__individual__.__objective__[__j__][0] *
+                        (1 - self.__individual__.__objective__[__j__][2])) <= __lower_freq__ <= \
+                            (self.__individual__.__objective__[__j__][0] *
+                             (1 + self.__individual__.__objective__[__j__][2])) and \
+                            (self.__individual__.__objective__[__j__][1] *
+                             (1 - self.__individual__.__objective__[__j__][2])) <= \
+                            __upper_freq__ <= (self.__individual__.__objective__[__j__][1] *
+                                               (1 + self.__individual__.__objective__[__j__][2])):
 
-                        __S11_min__ = \
-                            abs(min(__s11__[__s11_freq__.index(__lower_freq__): __s11_freq__.index(__upper_freq__)]))
-                        __fitness_temp__[-1] /= __S11_min__
+                        # The reward is the receptacle of the bandwidth (in Mega Hertz) multiplied by the minimum
+                        # return loss
+                        __reward__ = 1000 * (__number_of_bands__[__i__][1] - __number_of_bands__[__i__][0]) * \
+                                     abs(__number_of_bands__[__i__][2])
+
+                        __fitness_temp__.append(1 / __reward__)
 
                     else:
-                        continue
+                        # The penalty is the bandwidth (in Mega Hertz) multiplied by the minimum return loss
+                        __penalty__ = 1000 * (__number_of_bands__[__i__][1] - __number_of_bands__[__i__][0]) * \
+                                      abs(__number_of_bands__[__i__][2])
+
+                        __fitness_temp__.append(__penalty__)
 
                 # Update fitness value by adding the fitness value with the best possible fitness value from
-                # fitness_temp list, where the best fitness value is 0.0.
+                # __fitness_temp__ list, where the best fitness value is 0.0.
                 __s11_fitness__ += min(__fitness_temp__)
 
         # Add a possible bias. Note that if the __number_of_bands__ has the same value as
-        # self.__individual__.__objective__[0], there will not be any bias to add to the fitness with
-        __s11_fitness__ += abs(self.__individual__.__objective__[0] - len(__number_of_bands__))
+        # len(self.__individual__.__objective__), there will not be any bias to add to the fitness with
+        __s11_fitness__ += abs(len(self.__individual__.__objective__) - len(__number_of_bands__))
 
         # Evaluation of gain results
-        # The more positive and larger the __gain_fitness__ value is, the better
-        for __i__ in range(len(self.__individual__.__objective__[2])):
+        for __i__ in range(len(__number_of_bands__)):
+
             __temp__ = []
             for __j__ in range(len(__gain_freq__)):
-                if self.__individual__.__objective__[2][__i__][0] <= __gain_freq__[__j__] <= \
-                        self.__individual__.__objective__[2][__i__][1]:
-                    __temp__.append(__gain__[__j__])
+                if __number_of_bands__[__i__][0] <= __gain_freq__[__j__] <= __number_of_bands__[__i__][1]:
+                    __temp__.append(10 ** (__gain__[__j__] / 10))
+
             if len(__temp__) > 1:
-                __average_gain__ = sum(__temp__) / len(__temp__)
-                __sigma__ = [(__j__ - __average_gain__) ** 2 for __j__ in __temp__]
-                __sd__ = (sum(__sigma__) / len(__temp__)) ** 0.5
-                __lowest_gain__ = __average_gain__ - 5 * __sd__
-                if (__lowest_gain__ - __target_gain__[__i__]) > 0:
-                    __gain_fitness__ += 1 / __lowest_gain__
-                elif (__lowest_gain__ - __target_gain__[__i__]) < 0:
-                    __gain_fitness__ += abs(__lowest_gain__)
-                else:
-                    __gain_fitness__ += 1
-        # [1, -10, [[2.33, 2.44]], [0.023], [g0, g1]]
+                __gain_temp__ = sum(__temp__) / len(__temp__)
+
+                __k__ = 0
+                __found__ = False
+
+                while __k__ < len(self.__individual__.__objective__) and not __found__:
+                    if self.__individual__.__objective__[0] * (1 - self.__individual__.__objective__[2]) <= \
+                        __number_of_bands__[__i__][0] <= self.__individual__.__objective__[0] * \
+                        (1 + self.__individual__.__objective__[2]) and self.__individual__.__objective__[1] * \
+                            (1 - self.__individual__.__objective__[2]) <= __number_of_bands__[__i__][1] <= \
+                            self.__individual__.__objective__[1] * (1 + self.__individual__.__objective__[2]):
+
+                        __gain_fitness__ += 1 / (__gain_temp__ * 1000 *
+                                                 (__number_of_bands__[__i__][1] - __number_of_bands__[__i__][0]))
+                        __found__ = True
+
+                    __k__ += 1
+
+                if not __found__:
+                    __gain_fitness__ += 1 / 10 ** (-80 / 10)
+
+            else:
+                __gain_fitness__ += 1 / 10 ** (-80 / 10)
 
         # Return the total fitness value from the given individual CST simulation results, in the form of
         # s11 fitness and gain fitness. Remember that the fitness value is best when 0.0.
-        return __s11_fitness__, __gain_fitness__
+        return [__s11_fitness__, __gain_fitness__]
 
     def _select_parents(self):
         """
         Description:
         ------------
-        Selects parent pairs for producing offspring. The fitter the parent, the more likely that parent will be
-        selected for breeding.
+        The method uses the self.__pool_fitness__ attribute to determine which parent will be selected for breeding.
+        The addition of both the return loss and gain fitness values gives a single fitness value, which is used as
+        a probability value. The lower the fitness value, the higher the chance the parent will be selected for
+        breeding. A parent is selected by appending the index of the individual from the self.__pool__ attribute to
+        the self.__pool_index__ attribute.
 
         Parameters:
-        ----------
+        -----------
         None.
 
-        Return:
-        ------
+        Returns:
+        --------
         None.
 
         Notes:
@@ -441,7 +634,7 @@ class SearchSpaceOptimizer:
         __index_select_parents__ = 0                                # An index used to iterate through the
                                                                     # __config__.__pool_fitness__ list.
 
-        # Number of parents to insert in the __config__.__pool_index__ list in for producing offspring. Note that 2 is
+        # Number of parents to insert in the self.__pool_index__ list in for producing offspring. Note that 2 is
         # multiplied with the __config__.__number_of_offspring_per_generation__ variable to make up a pair per offspring.
         __number_of_parents__ = self.__number_of_offspring__ * 2
 
@@ -457,7 +650,7 @@ class SearchSpaceOptimizer:
                 __number_of_parents__ -= 1
 
             # If there are fewer parents to choose from than there are number of desired offspring, clone the same parent.
-            # This happens when the user incorrectly configured the __config__ variable(s) or a special case happened.
+            # This happens when the user incorrectly configured the attribute(s) or a special case happened.
             else:
                 __tries__ -= 1
 
@@ -475,19 +668,20 @@ class SearchSpaceOptimizer:
         """
         Description:
         ------------
-        Performs a crossover on the pool of selected parents. This is the initial stage of producing offspring.
+        Performs the crossover operation on the selected parents to generate offspring. The number of offspring to
+        generate is defined from the self.__number_of_offspring__ attribute defined by the user.
 
         Parameters:
-        ----------
+        -----------
         None.
 
-        Return:
-        ------
+        Returns:
+        --------
         None.
 
         Notes:
-        ----
-        Every element in the __config__.__pool_index__ variable is an individual (parent).
+        ------
+        None.
         """
 
         self.__offspring__ = []                     # The offspring list to populate given the
@@ -496,22 +690,43 @@ class SearchSpaceOptimizer:
         # Loop for the number of required offspring to generate
         for __i__ in range(self.__number_of_offspring__):
 
-            __index__ = __i__ % len(self.__pool__)
+            __index__ = __i__ % len(self.__pool_index__)
 
             # Append a fresh list, which is a new child that has no chromosomes yet.
-            self.__offspring__.append([[[__j__ for __j__ in self.__pool__[__index__][0][0]], []], []])
+            self.__offspring__.append([[], []])
 
-            # Loop until x and y offsets are gathered (this is the core to the crossover function)
-            __offset__ = [None, None]
-            while __offset__[0] is None or __offset__[1] is None:
-                __choose__ = np.random.choice(self.__pool_index__)
-                if np.random.choice([True, False]) and __offset__[0] is None:
-                    __offset__[0] = self.__pool__[__choose__][0][1][0]
-                __choose__ = np.random.choice(self.__pool_index__)
-                if np.random.choice([True, False]) and __offset__[1] is None:
-                    __offset__[1] = self.__pool__[__choose__][0][1][1]
+            # Perform crossover
+            for __j__ in range(len(self.__pool__[0][0])):
+                if np.random.choice([True, False], p=[self.__crossover_rate__, 1 - self.__crossover_rate__]):
+                    self.__offspring__[-1][0].append(self.__pool__[self.__pool_index__[__index__]][0][__j__])
+                else:
+                    self.__offspring__[-1][0].append(
+                        self.__pool__[self.__pool_index__[(__index__ + 1) % len(self.__pool_index__)]][0][__j__]
+                    )
 
-            self.__offspring__[-1][0][1] = __offset__
+            __tries__ = 10
+            __success__ = False
+            while __tries__ >= 0 and not __success__:
+
+                try:
+                    self.__individual__.CheckBoundary(Parameters=self.__offspring__[-1][0], Rounding=self.__rounding__)
+                    __success__ = True
+
+                except Exception as __error__:
+                    if self.__debugging__:
+                        print(__error__)
+
+                    if __tries__ == 0:
+                        self.__offspring__[-1][0] = self.__individual__.GenerateRandomParameterValue(
+                            Rounding=self.__rounding__)
+                    else:
+                        __random_index__ = np.random.choice(range(len(self.__offspring__[-1][0])))
+                        self.__offspring__[-1][0][__random_index__] = \
+                            self.__individual__.GenerateRandomParameterValue(Parameters=self.__offspring__[-1][0],
+                                                                             ParameterIndex=__random_index__,
+                                                                             Rounding=self.__rounding__)
+
+                __tries__ -= 1
 
             # Shuffle indices in self.__pool_index__ for fair offspring generation
             random.shuffle(self.__pool_index__)
@@ -520,18 +735,16 @@ class SearchSpaceOptimizer:
         """
         Description:
         ------------
-        Performs mutation(s) on the received offspring. The mutation is able to increase/decrease a child's substrate
-        width and/or length, swap a child's geometry component, shift a child's geometry component, remove a geometry
-        component if the geometry component is out of bounds of the child's substrate, or add a geometry component. The
-        __config__.__boundaries__[3] list is strictly avoided from any mutations.
+        Performs the mutation operation on the offspring. The type of mutation operators are to either increment a
+        parameter value, decrement a parameter value, or generate a random parameter value.
 
         Parameters:
         -----------
         None.
 
-        Return:
-        -------
-        Returns the offspring with possible mutation(s).
+        Returns:
+        --------
+        None.
 
         Notes:
         ------
@@ -540,23 +753,31 @@ class SearchSpaceOptimizer:
 
         # Individual for loop
         for __i__ in range(len(self.__offspring__)):
-            for __j__ in range(len(self.__offspring__[__i__][0][1])):
+            for __j__ in range(len(self.__offspring__[__i__][0])):
                 if np.random.choice([True, False], p=[self.__mutation_rate__, 1 - self.__mutation_rate__]):
-                    __choice__ = [True, False]
+                    __choice__ = [0, 1, 2]
                     np.random.shuffle(__choice__)
 
-                    if np.random.choice(__choice__):
+                    if np.random.choice(__choice__) == 0:
                         self.__individual__.IncrementParameterValue(
-                            Parameters=self.__offspring__[__i__][0][0],
-                            XYOffsets=self.__offspring__[__i__][0][1],
+                            Parameters=self.__offspring__[__i__][0],
                             Index=__j__,
-                            FocusOnParameters=False
+                            Rounding=self.__rounding__
+                        )
+
+                    elif np.random.choice(__choice__) == 1:
+                        self.__individual__.DecrementParameterValue(
+                            Parameters=self.__offspring__[__i__][0],
+                            Index=__j__,
+                            Rounding=self.__rounding__
+                        )
+
+                    elif np.random.choice(__choice__) == 2:
+                        self.__individual__.GenerateRandomParameterValue(
+                            Parameters=self.__offspring__[__i__][0],
+                            ParameterIndex=__j__,
+                            Rounding=self.__rounding__
                         )
 
                     else:
-                        self.__individual__.DecrementParameterValue(
-                            Parameters=self.__offspring__[__i__][0][0],
-                            XYOffsets=self.__offspring__[__i__][0][1],
-                            Index=__j__,
-                            FocusOnParameters=False
-                        )
+                        pass

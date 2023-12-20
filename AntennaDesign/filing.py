@@ -90,7 +90,7 @@ class Filing:
                     os.mkdir(path=__temp__, mode=0o777)
                 except Exception as __error__:
                     if self.__debugging__:
-                        print(__error__)
+                        print(f'<Filing: __init__: {__error__}>')
 
         # Create extra directories according to the defined Directories, if not None, parameter
         if Directories is not None:
@@ -103,7 +103,7 @@ class Filing:
                             os.mkdir(path=__temp__, mode=0o777)
                         except Exception as __error__:
                             if self.__debugging__:
-                                print(__error__)
+                                print(f'<Filing: __init__: {__error__}>')
 
     def CreateDirectories(self, Directories=None):
         """
@@ -138,7 +138,8 @@ class Filing:
                         os.mkdir(path=__temp__, mode=0o777)
                     except Exception as __error__:
                         if self.__debugging__:
-                            print(__error__)
+                            print(f'<Filing: CreateDirectories: {__error__}>')
+
         return 0
 
     def CreateFile(self, Filename):
@@ -164,8 +165,10 @@ class Filing:
 
         if os.path.exists(path=self.__directory__ + Filename):
             return -1
+
         __temp__ = open(self.__directory__ + Filename, 'w')
         __temp__.close()
+
         return 0
 
     def DeleteContent(self, Filename):
@@ -222,7 +225,7 @@ class Filing:
                 __candidates__ = __file_read__.readlines()
 
                 if len(__candidates__) == 0:
-                    raise Exception('File is empty')
+                    raise Exception('<Filing: Read: File is empty>')
 
                 __list__ = []
                 for __i__ in __candidates__:
@@ -234,7 +237,7 @@ class Filing:
 
                     except Exception as __error__:
                         if self.__debugging__:
-                            print(__error__)
+                            print(f'<Filing: Read: {__error__}>')
 
                         continue
 
@@ -244,9 +247,9 @@ class Filing:
 
         except Exception as __error__:
             if self.__debugging__:
-                print(__error__)
+                print(f'<Filing: Read: {__error__}>')
 
-            return -1
+        return -1
 
     def Append(self, Filename, List):
         """
@@ -272,16 +275,17 @@ class Filing:
         """
 
         try:
+
             __file_append__ = open(f'{self.__directory__ + Filename}', 'a+')
             __file_append__.write(f'{List}\n')
-
             __file_append__.close()
 
             return 0
 
         except Exception as __error__:
+
             if self.__debugging__:
-                print(f'Filing: Append: {__error__}')
+                print(f'<Filing: Append: {__error__}>')
 
             return -1
 
@@ -320,8 +324,9 @@ class Filing:
             return 0
 
         except Exception as __error__:
+
             if self.__debugging__:
-                print(__error__)
+                print(f'<Filing: Save: {__error__}>')
 
             return -1
 
@@ -353,7 +358,7 @@ class Filing:
 
         except Exception as __error__:
             if self.__debugging__:
-                print(__error__)
+                print(f'<Filing: DeleteFile: {__error__}>')
 
         return -1
 
@@ -411,6 +416,6 @@ class Filing:
         # Should an error occur that was unexpected
         except Exception as __error__:
             if self.__debugging__:
-                print(__error__)
+                print(f'<Filing: Duplicate: {__error__}>')
 
         return -1

@@ -141,14 +141,14 @@ class FineModel:
         # Sleep for 6 seconds in order for the CST program to completely open
         time.sleep(6)
         if self.__debugging__:
-            print('<simulator: FineModel: Initialize: 1. CST Studio Suite opened>')
+            print('<FineModel: Initialize: 1. CST Studio Suite opened>')
 
         # Disable interactive mode, which enables scripting mode
         pycst.SetQuietMode(cst=self.__cst__)
         # Sleep for 6 seconds
         time.sleep(6)
         if self.__debugging__:
-            print('<simulator: FineModel: Initialize: 2. Script mode initiated>')
+            print('<FineModel: Initialize: 2. Script mode initiated>')
 
         # Open the 'Python_Control.cst' CST Studio Suite project.
         pycst.open_project(cst=self.__cst__, path=str(pkg_resources.files('AntennaDesign') /
@@ -156,21 +156,21 @@ class FineModel:
         # Sleep for 6 seconds
         time.sleep(6)
         if self.__debugging__:
-            print('<simulator: FineModel: Initialize: 3. Project opened>')
+            print('<FineModel: Initialize: 3. Project opened>')
 
         # Get the active 3D window
         self.__mws__ = pycst.get_active_3d(cst=self.__cst__)
         # Sleep for 6 seconds
         time.sleep(6)
         if self.__debugging__:
-            print('<simulator: FineModel: Initialize: 4. Current project assigned>')
+            print('<FineModel: Initialize: 4. Current project assigned>')
 
         # Set the simulation frequency range
         pycst.frequency_range(mws=self.__mws__, frange1=FrequencyRangeMin, frange2=FrequencyRangeMax)
         # Sleep for 6 seconds
         time.sleep(6)
         if self.__debugging__:
-            print(f'<simulator: FineModel: Initialize: 5. Frequency range assigned, f_min = {FrequencyRangeMin}, '
+            print(f'<FineModel: Initialize: 5. Frequency range assigned, f_min = {FrequencyRangeMin}, '
                   f'f_max = {FrequencyRangeMax}>')
 
         # Set CST Studio Suite units
@@ -182,7 +182,7 @@ class FineModel:
         # Sleep for 6 seconds
         time.sleep(6)
         if self.__debugging__:
-            print('<simulator: FineModel: Initialize: 6. Units set>')
+            print('<FineModel: Initialize: 6. Units set>')
 
     def TimeDomainSolver(self, SteadyStateLimit=-40):
         """
@@ -233,7 +233,7 @@ class FineModel:
         """
 
         if Model is None:
-            raise Exception('<FineModel.ConstructAntenna: Model is of None type>')
+            raise Exception('<FineModel: ConstructAntenna: Model is of None type>')
 
         # Remove all components to begin with a new model
         self._remove_all(__component__=Model)
@@ -444,7 +444,7 @@ class FineModel:
 
         except Exception as __error__:
             if self.__debugging__:
-                print(__error__)
+                print(f'FineModel: _get_results: {__error__}>')
                 raise Exception('<FineModel: _get_results: Failed to retrieve gain response>')
 
         return [[__s11_result_vector__[0], __s11_result_vector__[2]],

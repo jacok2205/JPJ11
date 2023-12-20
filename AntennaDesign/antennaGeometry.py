@@ -153,7 +153,7 @@ class ModelGeometry:
         Used when the user wishes to set the objectives after creating an instance of this class. Note again that
         the format of the objectives is: [[f1_min, f1_max, tolerance1], ..., [fn_min, fn_max, tolerance_n]]. Each
         frequency range is of type float and the tolerance is a float that is less than 1. For example, 0.023 represents
-        2.3 % of band edge tolerance. If more than one list is in the objectives parameter, it means that more than
+        2.3 % for band edge tolerances. If more than one list is in the objectives parameter, it means that more than
         one band is desired.
 
         Parameters:
@@ -172,7 +172,7 @@ class ModelGeometry:
         """
 
         if Objectives is None:
-            raise Exception('<ModelGeometry: SetObjectives: Argument is of None type>')
+            raise Exception('<ModelGeometry: SetObjectives: Objectives is of None type>')
 
         self.__objective__ = Objectives
 
@@ -202,8 +202,8 @@ class ModelGeometry:
         if Name is None or Range is None:
             raise Exception('<ModelGeometry: AddParameter: One or more parameters are of None type>')
 
-        self.__parameter__['name'].append(Name)
-        self.__parameter__['range'].append(Range)
+        self.__parameter__['name'].append(copy.deepcopy(Name))
+        self.__parameter__['range'].append(copy.deepcopy(Range))
 
     def AddSequence(self, Material=None, ComponentName=None, Type=None, Operation=None, Z=None, Geometry=None):
         """
@@ -249,12 +249,12 @@ class ModelGeometry:
                 Geometry is None:
             raise Exception('<ModelGeometry: AddSequence: One or more parameters are of None type>')
 
-        self.__model__['material'].append(Material)
-        self.__model__['name'].append(ComponentName)
-        self.__model__['type'].append(Type)
-        self.__model__['operation'].append(Operation)
-        self.__model__['z'].append(Z)
-        self.__model__['geometry'].append(Geometry)
+        self.__model__['material'].append(copy.deepcopy(Material))
+        self.__model__['name'].append(copy.deepcopy(ComponentName))
+        self.__model__['type'].append(copy.deepcopy(Type))
+        self.__model__['operation'].append(copy.deepcopy(Operation))
+        self.__model__['z'].append(copy.deepcopy(Z))
+        self.__model__['geometry'].append(copy.deepcopy(Geometry))
 
     def SetWaveguidePort(self, PortNumber=None, Orientation=None, ExcitationDirection=None, XRange=None,
                          YRange=None, ZRange=None):
@@ -293,8 +293,9 @@ class ModelGeometry:
 
         if PortNumber is None or Orientation is None or ExcitationDirection is None or XRange is None or \
                 YRange is None or ZRange is None:
+
             self.__waveguide_port__ = None
-            raise Exception('<ModelGeometry: SetWaveguidePort: One or more parameters is of type None>')
+            raise Exception('<ModelGeometry: SetWaveguidePort: One or more parameters is of None type>')
 
         self.__waveguide_port__ = [PortNumber, Orientation, ExcitationDirection, XRange, YRange, ZRange]
 
@@ -326,9 +327,9 @@ class ModelGeometry:
         if Parameters is None:
             raise Exception('<ModelGeometry: SimulateModel: Parameters is of None type>')
         if self.__waveguide_port__ is None:
-            raise Exception('<ModelGeometry: SimulateModel: Waveguide port has not been set up>')
+            raise Exception('<ModelGeometry: SimulateModel: Waveguide port has not been defined by user>')
         if Rounding is None:
-            raise Exception('<ModelGeometry: GenerateRandomParameterValue: Rounding is of type None. '
+            raise Exception('<ModelGeometry: SimulateModel: Rounding is of None type. '
                             'Please specify a rounding number>')
 
         # Create a temporary model that will contain only float values for the defined parameters
@@ -381,7 +382,7 @@ class ModelGeometry:
                                                   ZRange=self.__waveguide_port__[5])
 
         # Simulate and return the results
-        # return self.__simulator__.TimeDomainSolver(SteadyStateLimit=-47)
+        return self.__simulator__.TimeDomainSolver(SteadyStateLimit=-40)
 
     def GenerateRandomParameterValue(self, Parameters=None, ParameterIndex=None, Rounding=None):
         """
@@ -413,7 +414,7 @@ class ModelGeometry:
         """
 
         if Rounding is None:
-            raise Exception('<ModelGeometry: GenerateRandomParameterValue: Rounding is of type None. '
+            raise Exception('<ModelGeometry: GenerateRandomParameterValue: Rounding is of None type. '
                             'Please specify a rounding number>')
 
         __tries__ = 100
@@ -439,7 +440,7 @@ class ModelGeometry:
 
                 except Exception as __error__:
                     if self.__debugging__:
-                        print(__error__)
+                        print(f'<ModelGeometry: GenerateRandomParameterValue: {__error__}>')
                     __tries__ -= 1
 
                 if __tries__ == 0:
@@ -473,7 +474,7 @@ class ModelGeometry:
 
                 except Exception as __error__:
                     if self.__debugging__:
-                        print(__error__)
+                        print(f'<ModelGeometry: GenerateRandomParameterValue: {__error__}>')
                     __tries__ -= 1
 
                 if __tries__ == 0:
@@ -515,12 +516,12 @@ class ModelGeometry:
 
             # Test to see if it is within its range
             try:
-                self.CheckBoundary(Parameters=Parameters)
+                self.CheckBoundary(Parameters=Parameters, Rounding=Rounding)
 
             # Decrement the parameter if it violates its range
             except Exception as __error__:
                 if self.__debugging__:
-                    print(__error__)
+                    print(f'<ModelGeometry: IncrementParameterValue: {__error__}>')
 
                 Parameters[Index] = round(Parameters[Index] - self.__parameter_step_size__, Rounding)
 
@@ -550,7 +551,7 @@ class ModelGeometry:
         """
 
         if Rounding is None:
-            raise Exception('<ModelGeometry: DecrementParameterValue: Rounding is of type None. '
+            raise Exception('<ModelGeometry: DecrementParameterValue: Rounding is of None type. '
                             'Please specify a rounding number>')
 
         # Decrement the parameter if not out of its defined range
@@ -559,12 +560,12 @@ class ModelGeometry:
 
             # Test to see if it is within its range
             try:
-                self.CheckBoundary(Parameters=Parameters)
+                self.CheckBoundary(Parameters=Parameters, Rounding=Rounding)
 
             # Increment the parameter if it violates its range
             except Exception as __error__:
                 if self.__debugging__:
-                    print(__error__)
+                    print(f'<ModelGeometry: DecrementParameterValue: {__error__}>')
 
                 Parameters[Index] = round(Parameters[Index] + self.__parameter_step_size__, Rounding)
 
