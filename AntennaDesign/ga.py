@@ -72,6 +72,9 @@ class SearchSpaceOptimizer:
     _evaluate_individual(__simulation_result__=None):
                                     The fitness function of the genetic algorithm, which only evaluates the return loss
                                     and gain responses for this current build.
+    _get_bands(__simulation_result__=None):
+                                    Determines the band(s) of the current simulation result, either from the individual
+                                    or the child of concern.
     _select_parents():
                                     Selects the parents for generating offspring. The better the fitness value an
                                     individual has, the better the chance it will be selected for breeding.
@@ -242,41 +245,42 @@ class SearchSpaceOptimizer:
             # form of a probability value; the lower the fitness value, the higher the chance of being
             # selected for the next generation
             __new_generation__ = []
-            __pool_fitness__ = [__i__[0] + __i__[1] for __i__ in self.__pool_fitness__]
-            __offspring_fitness__ = [__i__[0] + __i__[1] for __i__ in self.__offspring_fitness__]
-            __best_minimum__ = 9e12
+            __chosen_index__ = []
+            __best_minimum__ = None
 
             for __i__ in range(self.__population_size__):
 
-                __min_at_pool__ = True
+                __new_individual__ = False
+                __j__ = 0
 
-                # Get the best possible fitness value between the pool and offspring; this will be used for
-                # printing progress on the terminal
-                if min(__pool_fitness__) > __best_minimum__:
-                    __best_minimum__ = min(__pool_fitness__)
-                if min(__offspring_fitness__) > __best_minimum__:
-                    __best_minimum__ = min(__offspring_fitness__)
+                while __j__ < range(len(self.__offspring_fitness__)) and not __new_individual__:
+                    if self.__offspring_fitness__[__j__][0] < self.__pool_fitness__[__i__][0] and \
+                            self.__offspring_fitness__[__j__][1] <= self.__pool_fitness__[__i__][1] and \
+                            not __chosen_index__.__contains__(self.__offspring_fitness__[__j__]):
+                        __chosen_index__.append(__j__)
+                        __new_generation__.append(self.__offspring__[__j__])
+                        __new_individual__ = True
 
-                if min(__pool_fitness__) < min(__offspring_fitness__):
-                    __min__ = __pool_fitness__.index(min(__pool_fitness__))
-                elif min(__offspring_fitness__) < min(__pool_fitness__):
-                    __min__ = __offspring_fitness__.index(min(__offspring_fitness__))
-                    __min_at_pool__ = False
-                else:
-                    __pool__ = np.random.choice([True, False])
-                    if __pool__:
-                        __min__ = __pool_fitness__.index(min(__pool_fitness__))
+                    elif self.__offspring_fitness__[__j__][0] <= self.__pool_fitness__[__i__][0] and \
+                            self.__offspring_fitness__[__j__][1] < self.__pool_fitness__[__i__][1] and \
+                            not __chosen_index__.__contains__(self.__offspring_fitness__[__j__]):
+                        __chosen_index__.append(__j__)
+                        __new_generation__.append(self.__offspring__[__j__])
+                        __new_individual__ = True
+
                     else:
-                        __min__ = __offspring_fitness__.index(min(__pool_fitness__))
-                        __min_at_pool__ = False
+                        pass
 
-                if __min_at_pool__:
-                    __new_generation__.append(self.__pool__[__min__])
-                    __pool_fitness__[__min__] = 9e12
+                    __j__ += 1
 
-                else:
-                    __new_generation__.append(self.__offspring__[__min__])
-                    __offspring_fitness__[__min__] = 9e12
+                if not __new_individual__:
+                    __new_generation__.append(self.__pool__[__i__])
+
+                if __i__ == 0:
+                    if len(__chosen_index__) == 1:
+                        __best_minimum__ = self.__offspring_fitness__[__chosen_index__[0]]
+                    else:
+                        __best_minimum__ = self.__pool_fitness__[0]
 
             # Save the evaluation results (fitness values) of the population
             self.__filing__.Append(Filename=self.__files__[3], List=self.__pool_fitness__)
@@ -465,17 +469,103 @@ class SearchSpaceOptimizer:
 
         __s11_fitness__ = 0.0                                   # The total fitness value for s11 result
         __gain_fitness__ = 0.0                                  # The total fitness value for gain result
-        __index__ = 0                                           # Index for iterating through the individual's results
+
+        # Determine the number of bands in the form of [f_min, f_max, minimum return loss (in linear form), average
+        # gain over the band f_min to f_max]
+        __bands__ = self._get_bands(__simulation_result__=__simulation_result__)
+
+        # If no bands were found, it is considered as the worst possible solution
+        if len(__bands__) == 0:
+            for __i__ in self.__individual__.__objective__:
+                __s11_fitness__ += abs(__i__[0] + __i__[1]) * 9e9
+            __gain_fitness__ = 1 / 10 ** (-80/10)
+
+            return [__s11_fitness__, __gain_fitness__]
+
+        # If at least one band has been found under the condition of self.__individual__.__objective__
+        else:
+
+            # Add a possible bias. Note that if the __number_of_bands__ has the same value as
+            # len(self.__individual__.__objective__), there will not be any bias to add to the fitness with
+            __bias__ = abs(len(self.__individual__.__objective__) - len(__bands__))
+
+            __s11_fitness__ += __bias__
+            __gain_fitness__ += __bias__
+
+            # Iterate through the band(s) that were found
+            for __i__ in __bands__:
+
+                # Collect all fitness values from current band that was found and choose the fitness value that is
+                # the lowest, which is the best fitness value possible for the number of specified bands in
+                # self.__individual__.__objective__
+                __fitness_temp__ = []
+                __objective_met__ = False
+                for __j__ in self.__individual__.__objective__:
+
+                    # If the current band is within the objective band, perform a reward
+                    if __j__[0] * (1 - __j__[2]) <= __i__[0] <= (__j__[0] * (1 + __j__[2])) and \
+                            (__j__[1] * (1 - __j__[2])) <= __i__[1] <= (__j__[1] * (1 + __j__[2])):
+
+                        # The reward is the receptacle of the bandwidth (in Mega Hertz) multiplied by the minimum
+                        # return loss
+                        __fitness_temp__.append(1 / (1000 * (__i__[1] - __i__[0])) * __i__[2])
+
+                        __objective_met__ = True
+
+                    else:
+                        # The penalty is the bandwidth (in Mega Hertz) multiplied by the minimum return loss
+                        __fitness_temp__.append(1000 * (abs(__i__[0] - __j__[0]) + abs(__i__[1] - __j__[1])))
+
+                # Update fitness value by adding the fitness value with the best possible fitness value from
+                # __fitness_temp__ list, where the best fitness value is 0.0.
+                __s11_fitness__ += min(__fitness_temp__)
+                if __objective_met__ and __bias__ == 0:
+                    __gain_fitness__ += __i__[3]
+                else:
+                    __gain_fitness__ += 1 / 10 ** (-80 / 10)
+
+        # Return the total fitness value from the given individual CST simulation results, in the form of
+        # s11 fitness and gain fitness. Remember that the fitness value is best when 0.0.
+        return [__s11_fitness__, __gain_fitness__]
+
+    def _get_bands(self, __simulation_result__=None):
+        """
+        Description:
+        ------------
+        This function will be of the following format: [f_min, f_max, s11_min, avg_gain], where s11_min and avg_gain
+        correlates to the f_min and f_max range (band). The s11_min is transformed into its linear equivalent and the
+        average gain is determined as 1 / 10 ^ (avg_gain / 10)
+
+        Parameters:
+        -----------
+        __simulation_result__:      list
+                                    A list that contains two lists, the first list is the return loss responses and
+                                    the last list contains the gain responses. Each list has its own frequency range
+                                    that correlate to the response.
+
+        Returns:
+        --------
+        Returns the band(s) determined in the form as explained in the description.
+
+        Notes:
+        ------
+        None.
+        """
+
+        if self.__individual__.__objective__ is None:
+            raise Exception('<SearchSpaceOptimizer: _get_bands: self.__individual__.__objective__ is of None type>')
+
+        __index__ = 0                                   # Index for iterating through the individual's results
 
         # Evaluation of return loss results
-        __s11_freq__ = __simulation_result__[0][0]              # List of frequency values, in ascending order
-        __s11__ = __simulation_result__[0][1]                   # List of |S11|, in dB, values from the __freq__ inputs
-        __number_of_bands__ = []                                # List which will collect multiple bands that are under
-                                                                # the specified S11 value from
-                                                                # self.__individual__.__objective__[1]
-        # Evaluation of gain responses over a specified frequency range
-        __gain_freq__ = __simulation_result__[1][0]             # Frequency range specified for the gain responses
-        __gain__ = __simulation_result__[1][1]                  # The gain responses over the specified frequency range
+        __s11_freq__ = __simulation_result__[0][0]      # List of frequency values, in ascending order
+        __s11__ = __simulation_result__[0][1]           # List of |S11|, in dB, values from the __freq__ inputs
+        __gain_freq__ = __simulation_result__[1][0]     # Frequency range specified for the gain responses
+        __gain__ = __simulation_result__[1][1]          # The gain responses over the specified frequency range
+
+        __number_of_bands__ = []                        # List which will collect multiple bands that are under
+                                                        # the specified S11 value from self.__individual__.__objective__
+                                                        # Evaluation of gain responses over a specified frequency range
 
         # Determine the number of actual bands under the specified self.__individual__.__objective__ variable
         while __index__ < len(__s11__):
@@ -498,99 +588,28 @@ class SearchSpaceOptimizer:
 
                 # Append upper edge frequency and minimum return loss value (mode of operation)
                 __number_of_bands__[-1].append(__s11_freq__[__index__])
-                __number_of_bands__[-1].append(__minimum_return_loss__)
+                __number_of_bands__[-1].append(10 ** (__minimum_return_loss__ / 20))
+
+                # For collecting the gain values over the determined band
+                avg_gain = []
+
+                for __i__ in range(len(__gain_freq__)):
+                    if __number_of_bands__[-1][0] <= __gain_freq__[__i__] <= __number_of_bands__[-1][1]:
+                        avg_gain.append(__gain__[__i__])
+
+                # If there were gain values appended, determine the average gain and use the following formula:
+                # 1 / 10 ^ (avg_gain / 10)
+                if len(avg_gain) > 0:
+                    avg_gain = sum(avg_gain) / len(avg_gain)
+                    __number_of_bands__[-1].append(1 / 10 ** (avg_gain / 10))
+
+                # If no gain values were found, append the worst possible gain
+                else:
+                    __number_of_bands__[-1].append(1 / 10 ** (-80 / 10))
+
             __index__ += 1
 
-        # If no bands were found is considered as the worst solution
-        if len(__number_of_bands__) == 0:
-            for __i__ in self.__individual__.__objective__:
-                __s11_fitness__ += abs(__i__[0] + __i__[1]) * 9e9
-            __gain_fitness__ = 1 / 10 ** (-80/10)
-
-            return [__s11_fitness__, __gain_fitness__]
-
-        # If at least one band has been found under the condition of self.__individual__.__objective__
-        else:
-            # Iterate through the band(s) that were found
-            for __i__ in range(len(__number_of_bands__)):
-
-                # Collect all fitness values from current band that was found and choose the fitness value that is
-                # the lowest, which is the best fitness value possible for the number of specified bands in
-                # self.__individual__.__objective__
-                __fitness_temp__ = []
-                for __j__ in range(len(self.__individual__.__objective__)):
-
-                    __lower_freq__ = __number_of_bands__[__i__][0]
-                    __upper_freq__ = __number_of_bands__[__i__][1]
-
-                    # If the current band is within the objective band, perform a reward
-                    if (self.__individual__.__objective__[__j__][0] *
-                        (1 - self.__individual__.__objective__[__j__][2])) <= __lower_freq__ <= \
-                            (self.__individual__.__objective__[__j__][0] *
-                             (1 + self.__individual__.__objective__[__j__][2])) and \
-                            (self.__individual__.__objective__[__j__][1] *
-                             (1 - self.__individual__.__objective__[__j__][2])) <= \
-                            __upper_freq__ <= (self.__individual__.__objective__[__j__][1] *
-                                               (1 + self.__individual__.__objective__[__j__][2])):
-
-                        # The reward is the receptacle of the bandwidth (in Mega Hertz) multiplied by the minimum
-                        # return loss
-                        __reward__ = 1000 * (__number_of_bands__[__i__][1] - __number_of_bands__[__i__][0]) * \
-                                     abs(__number_of_bands__[__i__][2])
-
-                        __fitness_temp__.append(1 / __reward__)
-
-                    else:
-                        # The penalty is the bandwidth (in Mega Hertz) multiplied by the minimum return loss
-                        __penalty__ = 1000 * (__number_of_bands__[__i__][1] - __number_of_bands__[__i__][0]) * \
-                                      abs(__number_of_bands__[__i__][2])
-
-                        __fitness_temp__.append(__penalty__)
-
-                # Update fitness value by adding the fitness value with the best possible fitness value from
-                # __fitness_temp__ list, where the best fitness value is 0.0.
-                __s11_fitness__ += min(__fitness_temp__)
-
-        # Add a possible bias. Note that if the __number_of_bands__ has the same value as
-        # len(self.__individual__.__objective__), there will not be any bias to add to the fitness with
-        __s11_fitness__ += abs(len(self.__individual__.__objective__) - len(__number_of_bands__))
-
-        # Evaluation of gain results
-        for __i__ in range(len(__number_of_bands__)):
-
-            __temp__ = []
-            for __j__ in range(len(__gain_freq__)):
-                if __number_of_bands__[__i__][0] <= __gain_freq__[__j__] <= __number_of_bands__[__i__][1]:
-                    __temp__.append(10 ** (__gain__[__j__] / 10))
-
-            if len(__temp__) > 1:
-                __gain_temp__ = sum(__temp__) / len(__temp__)
-
-                __k__ = 0
-                __found__ = False
-
-                while __k__ < len(self.__individual__.__objective__) and not __found__:
-                    if self.__individual__.__objective__[0] * (1 - self.__individual__.__objective__[2]) <= \
-                        __number_of_bands__[__i__][0] <= self.__individual__.__objective__[0] * \
-                        (1 + self.__individual__.__objective__[2]) and self.__individual__.__objective__[1] * \
-                            (1 - self.__individual__.__objective__[2]) <= __number_of_bands__[__i__][1] <= \
-                            self.__individual__.__objective__[1] * (1 + self.__individual__.__objective__[2]):
-
-                        __gain_fitness__ += 1 / (__gain_temp__ * 1000 *
-                                                 (__number_of_bands__[__i__][1] - __number_of_bands__[__i__][0]))
-                        __found__ = True
-
-                    __k__ += 1
-
-                if not __found__:
-                    __gain_fitness__ += 1 / 10 ** (-80 / 10)
-
-            else:
-                __gain_fitness__ += 1 / 10 ** (-80 / 10)
-
-        # Return the total fitness value from the given individual CST simulation results, in the form of
-        # s11 fitness and gain fitness. Remember that the fitness value is best when 0.0.
-        return [__s11_fitness__, __gain_fitness__]
+        return __number_of_bands__
 
     def _select_parents(self):
         """

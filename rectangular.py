@@ -10,19 +10,8 @@ if __name__ == '__main__':
     RMSPDimensions = RMSP.get_rmsp_dimensions(__sub_h__=0.5e-3)
     MicrostripTransmissionLine.get_microstrip_transmission_dimensions(__freq__=2.4e9, __er__=3.55,
                                                                       __sub_h__=0.5e-3, __Zo__=50)
-    # filing = Filing(Directories=None, Debugging=True)
-    #
-    # filing.CreateDirectories(Directories=['\\root'])
-    # filing.CreateFile(Filename='\\root\\test1')
-    # filing.CreateFile(Filename='\\root\\test2')
-    # filing.DeleteFile(Filename='\\root\\test2')
-    #
-    # lists = [[[1, 2, 3], []], [[4, 5, 6], []], [[7, 8, 9], []]]
-    # filing.Save(Filename='\\root\\test1', Lists=lists)
-    # print(filing.Duplicate(Filename='\\root\\test1', List=[[1, 2, 3], []]))
 
     simulator = FineModel(Debugging=True)
-    # simulator.Initialize(FrequencyRangeMin=1, FrequencyRangeMax=7)
 
     parameter = [
         ['h1', [0.5, 21.5]],
@@ -75,11 +64,6 @@ if __name__ == '__main__':
     waveguide = [1, 'Y', 'Positive', [-2.5 - 0.1, 2.5 + 0.1],
                  [-20/2 - 9.5, -20/2 - 9.5],
                  [-2.5 - 0.1 + 0.695, 2.5 + 0.1 + 0.695]]
-
-    # simulator.ConstructAntenna(Model=model)
-    # simulator.ConstructWaveguidePort(PortNumber=waveguide[0], Orientation=waveguide[1], ExcitationDirection=waveguide[2], XRange=waveguide[3],
-    #                                  YRange=waveguide[4], ZRange=waveguide[5])
-    # print(simulator.TimeDomainSolver(SteadyStateLimit=-40))
 
     antenna = ModelGeometry(ParameterStepSize=1.0,
                             Objectives=[[2.36, 2.44, 0.023]],
