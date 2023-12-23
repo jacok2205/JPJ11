@@ -253,7 +253,7 @@ class SearchSpaceOptimizer:
                 __new_individual__ = False
                 __j__ = 0
 
-                while __j__ < range(len(self.__offspring_fitness__)) and not __new_individual__:
+                while __j__ < len(self.__offspring_fitness__) and not __new_individual__:
                     if self.__offspring_fitness__[__j__][0] < self.__pool_fitness__[__i__][0] and \
                             self.__offspring_fitness__[__j__][1] <= self.__pool_fitness__[__i__][1] and \
                             not __chosen_index__.__contains__(self.__offspring_fitness__[__j__]):
@@ -508,7 +508,7 @@ class SearchSpaceOptimizer:
 
                         # The reward is the receptacle of the bandwidth (in Mega Hertz) multiplied by the minimum
                         # return loss
-                        __fitness_temp__.append(1 / (1000 * (__i__[1] - __i__[0])) * __i__[2])
+                        __fitness_temp__.append(1 / (1000 * (__i__[1] - __i__[0])) * 10 ** (-10 / 20))
 
                         __objective_met__ = True
 
@@ -739,11 +739,19 @@ class SearchSpaceOptimizer:
                         self.__offspring__[-1][0] = self.__individual__.GenerateRandomParameterValue(
                             Rounding=self.__rounding__)
                     else:
-                        __random_index__ = np.random.choice(range(len(self.__offspring__[-1][0])))
-                        self.__offspring__[-1][0][__random_index__] = \
-                            self.__individual__.GenerateRandomParameterValue(Parameters=self.__offspring__[-1][0],
-                                                                             ParameterIndex=__random_index__,
-                                                                             Rounding=self.__rounding__)
+                        try:
+                            __random_index__ = np.random.choice(range(len(self.__offspring__[-1][0])))
+                            self.__offspring__[-1][0][__random_index__] = \
+                                self.__individual__.GenerateRandomParameterValue(Parameters=self.__offspring__[-1][0],
+                                                                                 ParameterIndex=__random_index__,
+                                                                                 Rounding=self.__rounding__)
+                        except Exception as __error__:
+                            if self.__debugging__:
+                                print(f'<SearchSpaceOptimizer: crossover: {__error__}>')
+
+                            self.__offspring__[-1][0] = \
+                                self.__individual__.GenerateRandomParameterValue(Rounding=self.__rounding__)
+                            __success__ = True
 
                 __tries__ -= 1
 
