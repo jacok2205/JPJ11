@@ -258,14 +258,14 @@ class SearchSpaceOptimizer:
                             self.__offspring_fitness__[__j__][1] <= self.__pool_fitness__[__i__][1] and \
                             not __chosen_index__.__contains__(self.__offspring_fitness__[__j__]):
                         __chosen_index__.append(__j__)
-                        __new_generation__.append(self.__offspring__[__j__])
+                        __new_generation__.append(copy.deepcopy(self.__offspring__[__j__]))
                         __new_individual__ = True
 
                     elif self.__offspring_fitness__[__j__][0] <= self.__pool_fitness__[__i__][0] and \
                             self.__offspring_fitness__[__j__][1] < self.__pool_fitness__[__i__][1] and \
                             not __chosen_index__.__contains__(self.__offspring_fitness__[__j__]):
                         __chosen_index__.append(__j__)
-                        __new_generation__.append(self.__offspring__[__j__])
+                        __new_generation__.append(copy.deepcopy(self.__offspring__[__j__]))
                         __new_individual__ = True
 
                     else:
@@ -274,7 +274,7 @@ class SearchSpaceOptimizer:
                     __j__ += 1
 
                 if not __new_individual__:
-                    __new_generation__.append(self.__pool__[__i__])
+                    __new_generation__.append(copy.deepcopy(self.__pool__[__i__]))
 
                 if __i__ == 0:
                     if len(__chosen_index__) == 1:
@@ -508,7 +508,10 @@ class SearchSpaceOptimizer:
 
                         # The reward is the receptacle of the bandwidth (in Mega Hertz) multiplied by the minimum
                         # return loss
-                        __fitness_temp__.append(1 / (1000 * (__i__[1] - __i__[0])) * 10 ** (-10 / 20))
+                        if __i__[1] - __i__[0] == 0:
+                            __fitness_temp__.append(1 / 1000 * 10 ** (-10 / 20))
+                        else:
+                            __fitness_temp__.append(1 / (1000 * (__i__[1] - __i__[0])) * 10 ** (-10 / 20))
 
                         __objective_met__ = True
 
@@ -740,7 +743,7 @@ class SearchSpaceOptimizer:
                             Rounding=self.__rounding__)
                     else:
                         try:
-                            __random_index__ = np.random.choice(range(len(self.__offspring__[-1][0])))
+                            __random_index__ = random.choice(range(len(self.__offspring__[-1][0])))
                             self.__offspring__[-1][0][__random_index__] = \
                                 self.__individual__.GenerateRandomParameterValue(Parameters=self.__offspring__[-1][0],
                                                                                  ParameterIndex=__random_index__,
@@ -782,29 +785,42 @@ class SearchSpaceOptimizer:
         for __i__ in range(len(self.__offspring__)):
             for __j__ in range(len(self.__offspring__[__i__][0])):
                 if np.random.choice([True, False], p=[self.__mutation_rate__, 1 - self.__mutation_rate__]):
-                    __choice__ = [0, 1, 2]
-                    np.random.shuffle(__choice__)
+                    __choice__ = [0, 1, 2, 3]
+                    random.shuffle(__choice__)
 
-                    if np.random.choice(__choice__) == 0:
+                    if random.choice(__choice__) == 0:
                         self.__individual__.IncrementParameterValue(
                             Parameters=self.__offspring__[__i__][0],
                             Index=__j__,
                             Rounding=self.__rounding__
                         )
 
-                    elif np.random.choice(__choice__) == 1:
+                    elif random.choice(__choice__) == 1:
                         self.__individual__.DecrementParameterValue(
                             Parameters=self.__offspring__[__i__][0],
                             Index=__j__,
                             Rounding=self.__rounding__
                         )
 
-                    elif np.random.choice(__choice__) == 2:
-                        self.__individual__.GenerateRandomParameterValue(
-                            Parameters=self.__offspring__[__i__][0],
-                            ParameterIndex=__j__,
-                            Rounding=self.__rounding__
-                        )
+                    elif random.choice(__choice__) == 2:
 
+                        __value__ = self.__offspring__[__i__][0][__j__]
+
+                        try:
+                            self.__individual__.GenerateRandomParameterValue(
+                                Parameters=self.__offspring__[__i__][0],
+                                ParameterIndex=__j__,
+                                Rounding=self.__rounding__
+                            )
+
+                        except Exception as __error__:
+                            if self.__debugging__:
+                                print(f'<SearchSpaceOptimizer: mutation: {__error__}>')
+
+                            self.__offspring__[__i__][0][__j__] = __value__
+
+                    elif random.choice(__choice__) == 3:
+                        self.__offspring__[__i__][0] = \
+                            self.__individual__.GenerateRandomParameterValue(Rounding=self.__rounding__)
                     else:
                         pass

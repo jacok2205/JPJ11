@@ -428,9 +428,9 @@ class ModelGeometry:
                     # Generate random parameter value list
                     for __i__ in self.__parameter__['range']:
                         __parameter__.append(
-                            round(np.random.choice(np.arange(__i__[0],
-                                                             __i__[1] + self.__parameter_step_size__,
-                                                             self.__parameter_step_size__)), Rounding)
+                            round(random.choice(np.arange(__i__[0],
+                                                          __i__[1] + self.__parameter_step_size__,
+                                                          self.__parameter_step_size__)), Rounding)
                         )
 
                     # Check if the boundary is met
@@ -456,7 +456,7 @@ class ModelGeometry:
             while __tries__ > 0:
                 try:
                     # Generate a random parameter value
-                    __parameter__ = round(np.random.choice(np.arange(
+                    __parameter__ = round(random.choice(np.arange(
                         self.__parameter__['range'][ParameterIndex][0],
                         self.__parameter__['range'][ParameterIndex][1] + self.__parameter_step_size__,
                         self.__parameter_step_size__)

@@ -3,15 +3,28 @@ from AntennaDesign.__init__ import *
 
 class CoarseModel:
     def __init__(self, NumberOfHiddenLayers=None, NumberOfInputChannels=None, NumberOfOutputChannels=None,
-                 Learn=True, BatchSize=10, LearningRate=1e-3, Beta1=0.900, Beta2=0.999, Epsilon=1e-8,
-                 ScalingFactor=1.5, LeakageRatio=0.3, ValidationAccuracy=0.8,
-                 Filing=None, Directory=None, Debugging=False):
+                 ScalingFactor=1.5, Filing=None, Directory=None, Debugging=False):
         if NumberOfHiddenLayers is None or NumberOfOutputChannels is None:
             raise Exception('<pdrn: NumberOfHiddenLayers or NumberOfOutputChannels not defined>')
+
+        # Activation parameters
+        self.__leakage_ratio__ = None
+
+        # Learning parameters
+        self.__beta_1__ = None
+        self.__beta_2__ = None
+        self.__epsilon__ = None
+        self.__alpha__ = None
+        self.__N__ = None
+        self.__init_N__ = 0
+
+        # Modeling accuracy
+        self.__accuracy__ = None
 
         # Class objects
         self.__filing__ = Filing
 
+        # For debugging (developer mode)
         self.__debugging__ = Debugging
 
         if Directory is None:
@@ -28,21 +41,6 @@ class CoarseModel:
             self.__s_c__ = (NumberOfInputChannels / NumberOfOutputChannels) ** (1 / (NumberOfHiddenLayers - 1))
         else:
             self.__s_c__ = ScalingFactor
-
-        # Activation parameters
-        self.__leakage_ratio__ = LeakageRatio
-
-        # Learning parameters
-        self.__learn__ = Learn
-        self.__beta_1__ = Beta1
-        self.__beta_2__ = Beta2
-        self.__epsilon__ = Epsilon
-        self.__alpha__ = LearningRate
-        self.__N__ = BatchSize
-        self.__init_N__ = 0
-
-        # Modeling accuracy
-        self.__accuracy__ = ValidationAccuracy
 
         # 1D array(s)
         self.__error_k__ = [0.0 for _ in range(self.__phi_k__)]
@@ -79,27 +77,14 @@ class CoarseModel:
                 self.__variance__.append([[0.0 for _ in range(__num_neuron_weights__)] for _ in range((__num_neurons__ + 1))])
 
             # Append layer lists
-            self.__neuron_array__.append([0.0] * __num_neurons__)
+            self.__neuron_array__.append([0.0 for _ in range(__num_neurons__)])
             self.__in_j__.append([0.0 for _ in range(__num_neurons__)])
             self.__out_j__.append([0.0 for _ in range(__num_neurons__)])
             self.__delta__.append([0.0 for _ in range(__num_neurons__)])
 
-        # Structure of network
-        __structure__ = [
-            self.__phi_k__,             # Number of outputs
-            self.__s_c__,               # Scaling factor
-            self.__d_s__,               # Number of hidden layers
-            self.__beta_1__,            # ADAM constant 1
-            self.__beta_2__,            # ADAM constant 2
-            self.__epsilon__,           # ADAM constant 3
-        ]
-
         if self.__filing__ is not None:
             # Create directories
             self.__filing__.CreateDirectories(Directories=self.__directory__)
-
-            # Save the structure
-            self.__filing__.Save(Filename=self.__files__[0], Lists=__structure__)
 
             # Attempt to get stored weights
             __weights__ = self.__filing__.Read(Filename=self.__files__[1])
@@ -112,10 +97,25 @@ class CoarseModel:
             else:
                 self.weights_array__ = __weights__
 
-    def Train(self, TrainingData=None, ValidationData=None, NumberOfEpochs=None, TrainDurationMinutes=None,
-              RRMSEConvergence=None):
+    def Train(self, BatchSize=10, LearningRate=1e-3, Beta1=0.900, Beta2=0.999, Epsilon=1e-8, LeakageRatio=0.3,
+              ValidationAccuracy=0.8, TrainingData=None, ValidationData=None, NumberOfEpochs=None,
+              TrainDurationMinutes=None, RRMSEConvergence=None):
         if TrainingData is None or ValidationData is None or (NumberOfEpochs is None and TrainDurationMinutes is None):
             raise Exception('<CoarseModel: Train: One or more parameters are of type None>')
+
+        # Activation parameters
+        __leakage_ratio__ = LeakageRatio
+
+        # Learning parameters
+        __beta_1__ = Beta1
+        __beta_2__ = Beta2
+        __epsilon__ = Epsilon
+        __alpha__ = LearningRate
+        __N__ = BatchSize
+        __init_N__ = 0
+
+        # Modeling accuracy
+        __accuracy__ = ValidationAccuracy
 
         if NumberOfEpochs is not None:
             __start__ = 0

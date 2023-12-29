@@ -215,7 +215,7 @@ class Filing:
 
         Notes:
         ------
-        This function is executed when generation_file() receives __mode__='read'.
+        None.
         """
 
         try:
