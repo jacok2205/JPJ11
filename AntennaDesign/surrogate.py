@@ -33,7 +33,7 @@ class CoarseModel:
                                     A string representing the directory for the instance of this class to store results.
     __files__:                      list
                                     A list that contains file names to create, write, and read from. The following files
-                                    are used: 'Weights'.
+                                    are used: 'Weights' and 'lhs'.
     __phi_k__:                      int
                                     Variable that describes the number of output channels / output neurons for the
                                     neural network.
@@ -82,6 +82,8 @@ class CoarseModel:
                                     The constructor of the class, where the NumberOfOutputChannels and
                                     NumberOfHiddenLayers must be given as arguments. The neural network is
                                     initialized if all required parameters are correct.
+    BuildDataset(Model=None, Parameters=None, NumberOfSamples=21, Rounding=6):
+                                    Generates data for the surrogate model to train on.
     Train(BatchSize=10, LearningRate=1e-3, Beta1=0.900, Beta2=0.999, Epsilon=1e-8, TrainingData=None,
                 ValidationData=None, TestingData=None, NumberOfEpochs=None, TrainDurationMinutes=None,
                 NRMSEConvergence=None):
@@ -173,7 +175,10 @@ class CoarseModel:
             self.__directory__ = ['\\Surrogate\\']
         else:
             self.__directory__ = ['\\Surrogate\\' + Directory + '\\']
-        self.__files__ = [self.__directory__[0] + 'Weights']
+        self.__files__ = [self.__directory__[0] + 'Weights', self.__directory__[0] + 'lhs']
+
+        for __i__ in self.__files__:
+            self.__filing__.CreateFile(Filename=__i__)
 
         # Network structure
         self.__phi_k__ = NumberOfOutputChannels
@@ -267,6 +272,55 @@ class CoarseModel:
                         print(f'<CoarseModel: __init__: Read weights do not match the defined architecture: '
                               f'{__error__}>')
                     self.weights_array__ = __temp_weights__
+
+    def BuildDataset(self, Model=None, Parameters=None, NumberOfSamples=21, Rounding=6):
+        """
+        Description:
+        ------------
+        Generates a dataset which the user can utilize for training, validation, and testing data sets.
+
+        Parameters:
+        -----------
+        Model:                      ModelGeometry
+                                    Instance of the antenna model that was used for the genetic algorithm.
+        Parameters:                 list
+                                    A list of parameters in the form of [name, range], which is the same format
+                                    used for the ModelGeometry class, except it is a list, not a dictionary.
+        NumberOfSamples:            int
+                                    Defined by the user, this describes to the number of samples to be generated.
+        Rounding:                   int
+                                    The rounding for the float value(s) of the Parameter(s) (attribute Parameters).
+
+        Returns:
+        --------
+        Returns the dataset, with its simulation results in the form of [parameter values, simulation results].
+
+        Notes:
+        ------
+        None.
+        """
+
+        if Model is None or Parameters is None:
+            raise Exception('<CoarseModel: CollectData: One or more arguments are of None type>')
+
+        # Extract range lists from given parameter list
+        __params__ = [__i__[1] for __i__ in Parameters]
+        # Initialize LHS instance
+        __lhs__ = LHS(xlimits=np.asarray(__params__))
+        # Get samples from __lhs__ variable
+        __sample__ = __lhs__(NumberOfSamples).tolist()
+        # Data list that keeps all samples in the form of [parameter values, simulation results]
+        __temp__ = []
+
+        for __i__ in range(len(__sample__)):
+
+            print(f'\r<CoarseModel: BuildDataset: Generating dataset: {len(__sample__) - (__i__ + 1)} '
+                  f'samples remaining')
+
+            __temp__.append([__sample__[__i__], Model.SimulateModel(Parameters=__sample__[__i__], Rounding=Rounding)])
+            self.__filing__.Append(Filename=self.__files__[1], List=__temp__[-1])
+
+        return __temp__
 
     def Train(self, BatchSize=10, LearningRate=1e-3, Beta1=0.900, Beta2=0.999, Epsilon=1e-8,
               TrainingData=None, ValidationData=None, TestingData=None, NumberOfEpochs=None,

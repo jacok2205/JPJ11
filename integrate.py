@@ -140,3 +140,13 @@ if __name__ == '__main__':
         plt.plot(range(len(results[1])), results[1], 'k')
         plt.plot(range(len(results[2])), results[2], 'o')
         plt.show()
+        antenna = ModelGeometry(ParameterStepSize=0.5, Objectives=[], Simulator=simulator, ExploreSpace=[],
+                                FrequencyRangeMin=2.3, FrequencyRangeMax=2.5, Debugging=True)
+        for __i__ in parameter:
+            antenna.AddParameter(Name=__i__[0], Range=__i__[1])
+        for __i__ in model:
+            antenna.AddSequence(Material=__i__[0], ComponentName=__i__[1], Type=__i__[2], Operation=__i__[3],
+                                Z=__i__[4], Geometry=__i__[5])
+        antenna.SetWaveguidePort(PortNumber=waveguide[0], Orientation=waveguide[1], ExcitationDirection=waveguide[2],
+                                 XRange=waveguide[3], YRange=waveguide[4], ZRange=waveguide[5])
+        __data__ = __nn__.BuildDataset(Model=antenna, Parameters=parameter, NumberOfSamples=300, Rounding=3)

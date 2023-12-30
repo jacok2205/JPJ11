@@ -31,6 +31,8 @@
                                     Used for generating random values within a defined range.
     copy:                           built-in module
                                     Used to generate deep copies of lists.
+    LHS:                            Sub-library
+                                    Used for latin hypercube sampling for surrogate modeling.
     pycst:                          module
                                     Used as the 'driver' for controlling the CST Studio Suite software.
 
@@ -49,6 +51,7 @@ from matplotlib import pyplot as plt
 import ast as ast
 import random
 import copy
+from smt.sampling_methods import LHS
 from AntennaDesign import pycst
 
 __all__ = [
@@ -62,5 +65,6 @@ __all__ = [
     'ast',
     'random',
     'copy',
+    'LHS',
     'pycst'
 ]
