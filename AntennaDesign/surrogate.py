@@ -175,6 +175,10 @@ class CoarseModel:
             self.__directory__ = ['\\Surrogate\\']
         else:
             self.__directory__ = ['\\Surrogate\\' + Directory + '\\']
+        # Create directories
+        self.__filing__.CreateDirectories(Directories=self.__directory__)
+
+        # Create file absolute path(s)
         self.__files__ = [self.__directory__[0] + 'Weights', self.__directory__[0] + 'lhs']
 
         for __i__ in self.__files__:
@@ -244,8 +248,6 @@ class CoarseModel:
 
         # Extract the weights array
         if self.__filing__ is not None:
-            # Create directories
-            self.__filing__.CreateDirectories(Directories=self.__directory__)
 
             # Attempt to get stored weights
             __weights__ = self.__filing__.Read(Filename=self.__files__[0])

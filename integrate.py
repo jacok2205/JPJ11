@@ -150,3 +150,15 @@ if __name__ == '__main__':
         antenna.SetWaveguidePort(PortNumber=waveguide[0], Orientation=waveguide[1], ExcitationDirection=waveguide[2],
                                  XRange=waveguide[3], YRange=waveguide[4], ZRange=waveguide[5])
         __data__ = __nn__.BuildDataset(Model=antenna, Parameters=parameter, NumberOfSamples=300, Rounding=3)
+
+        # while True:
+        #     u_l = [1, 10]
+        #     result = u_l[0] + random.uniform(1, 0) * (u_l[1] - u_l[0])
+        #     if result < u_l[0]:
+        #         print('FUCK')
+        #         break
+        #     elif result > u_l[1]:
+        #         print("FUCK")
+        #         break
+        #     else:
+        #         print(result)
