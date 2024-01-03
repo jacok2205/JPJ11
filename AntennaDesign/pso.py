@@ -12,7 +12,7 @@ class PSO:
         self.__boundary__ = ParameterRanges
         self.__surrogate__ = Objective
         self.__particle__ = []
-        self.__global_best__ = [[], []]
+        self.__global_best__ = [[], [0.0, 0.0]]
         self.__w__ = None
         self.__c1__ = None
         self.__c2__ = None
@@ -20,7 +20,7 @@ class PSO:
         # Initialize particles
         for __i__ in range(NumberOfParticles):
             # Append particle n with following format: [position, velocity, fitness, best fitness, personal best]
-            self.__particle__.append([[], [], None, None, []])
+            self.__particle__.append([[], [], [0.0, 0.0], [0.0, 0.0], []])
 
             for __j__ in ParameterRanges:
                 # Initialize particle position with following formula:
@@ -35,16 +35,19 @@ class PSO:
 
         # Initialize personal best
         for __i__ in range(len(self.__particle__)):
-            self.__particle__[__i__][3] = copy.deepcopy(self.__particle__[__i__][2])
+            self.__particle__[__i__][3][0] = copy.deepcopy(self.__particle__[__i__][2][0])
             self.__particle__[__i__][4] = copy.deepcopy(self.__particle__[__i__][0])
 
         # Initialize global best
         self.__global_best__[0] = copy.deepcopy(self.__particle__[0][4])
         self.__global_best__[1] = copy.deepcopy(self.__particle__[0][3])
         for __i__ in range(1, len(self.__particle__), 1):
-            if self.__particle__[__i__][3] < self.__global_best__[1]:
+            if (self.__particle__[__i__][3][0] < self.__global_best__[1][0] and
+                self.__particle__[__i__][3][1] <= self.__global_best__[1][1]) or \
+                    (self.__particle__[__i__][3][0] <= self.__global_best__[1][0] and
+                     self.__particle__[__i__][3][1] < self.__global_best__[1][1]):
                 self.__global_best__[0] = copy.deepcopy(self.__particle__[__i__][4])
-                self.__global_best__[1] = copy.deepcopy(self.__particle__[__i__][3])
+                self.__global_best__[1][0] = copy.deepcopy(self.__particle__[__i__][3][0])
 
     def Optimize(self, NumberOfIterations=None, Convergence=None, W=0.9, C1=1.5, C2=1.5):
         if NumberOfIterations is None and Convergence is None:
@@ -89,17 +92,23 @@ class PSO:
 
     def __objective__(self):
         for __i__ in range(len(self.__particle__)):
-            self.__particle__[__i__][2] = 3 * self.__particle__[__i__][0][0] ** 2 - 18 * self.__particle__[__i__][0][0] - 48
+            self.__particle__[__i__][2][0] = 0.1 * self.__particle__[__i__][0][0] ** 2 + 18 * self.__particle__[__i__][0][0] - 48
 
     def __update_personal_best__(self):
         for __i__ in range(len(self.__particle__)):
-            if self.__particle__[__i__][2] < self.__particle__[__i__][3]:
+            if (self.__particle__[__i__][2][0] < self.__particle__[__i__][3][0]
+                    and self.__particle__[__i__][2][1] <= self.__particle__[__i__][3][1]) or \
+                    (self.__particle__[__i__][2][0] <= self.__particle__[__i__][3][0] and
+                     self.__particle__[__i__][2][1] < self.__particle__[__i__][3][1]):
                 self.__particle__[__i__][3] = copy.deepcopy(self.__particle__[__i__][2])
                 self.__particle__[__i__][4] = copy.deepcopy(self.__particle__[__i__][0])
 
     def __update_global_best__(self):
         for __i__ in range(len(self.__particle__)):
-            if self.__particle__[__i__][3] < self.__global_best__[1]:
+            if (self.__particle__[__i__][3][0] < self.__global_best__[1][0] and
+                self.__particle__[__i__][3][1] <= self.__global_best__[1][1]) or \
+                    (self.__particle__[__i__][3][0] <= self.__global_best__[1][0] and
+                     self.__particle__[__i__][3][1] < self.__global_best__[1][1]):
                 self.__global_best__[0] = copy.deepcopy(self.__particle__[__i__][4])
                 self.__global_best__[1] = copy.deepcopy(self.__particle__[__i__][3])
 

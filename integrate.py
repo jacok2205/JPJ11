@@ -120,9 +120,9 @@ if __name__ == '__main__':
             __train__.append([__i__[0]])
             __validate__.append([__i__[0]])
             __test__.append([__i__[0]])
-            for __j__ in range(len(__i__[1][0][0])):
-                if 2.3 <= __i__[1][0][0][__j__] <= 2.5:
-                    __temp__.append(10 ** (__i__[1][0][1][__j__] / 20))
+            for __j__ in range(len(__i__[1][1][0])):
+                if 2.3 <= __i__[1][1][0][__j__] <= 2.5:
+                    __temp__.append(10 ** (__i__[1][1][1][__j__] / 10))
             __train__[-1].append(copy.deepcopy(__temp__))
             __validate__[-1].append(copy.deepcopy(__temp__))
             __test__[-1].append(copy.deepcopy(__temp__))
@@ -130,10 +130,10 @@ if __name__ == '__main__':
         __train__ = [__train__[0]]
         __validate__ = [__validate__[0]]
         __test__ = [__test__[0]]
-        __nn__ = surrogate(NumberOfInputChannels=len(__train__[0][0]), NumberOfHiddenLayers=4,
+        __nn__ = surrogate(NumberOfInputChannels=len(__train__[0][0]), NumberOfHiddenLayers=3,
                            NumberOfOutputChannels=len(__train__[0][1]),
                            Debugging=True, Filing=filing)
-        results = __nn__.Train(BatchSize=4, LearningRate=1e-3, TrainingData=__train__,
+        results = __nn__.Train(BatchSize=1, LearningRate=1e-3, TrainingData=__train__,
                                ValidationData=__validate__, TestingData=__test__,
                                TrainDurationMinutes=1, NRMSEConvergence=0.0005)
         plt.plot(range(len(results[0])), results[0], 'ob')
