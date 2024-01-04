@@ -179,7 +179,7 @@ class CoarseModel:
         self.__filing__.CreateDirectories(Directories=self.__directory__)
 
         # Create file absolute path(s)
-        self.__files__ = [self.__directory__[0] + 'Weights', self.__directory__[0] + 'lhs']
+        self.__files__ = [self.__directory__[0] + 'Weights', '\\Surrogate\\lhs']
 
         for __i__ in self.__files__:
             self.__filing__.CreateFile(Filename=__i__)
@@ -305,22 +305,33 @@ class CoarseModel:
         if Model is None or Parameters is None:
             raise Exception('<CoarseModel: CollectData: One or more arguments are of None type>')
 
-        # Extract range lists from given parameter list
-        __params__ = [__i__[1] for __i__ in Parameters]
         # Initialize LHS instance
-        __lhs__ = LHS(xlimits=np.asarray(__params__))
+        __lhs__ = LHS(xlimits=np.asarray(Parameters))
         # Get samples from __lhs__ variable
         __sample__ = __lhs__(NumberOfSamples).tolist()
         # Data list that keeps all samples in the form of [parameter values, simulation results]
         __temp__ = []
 
-        for __i__ in range(len(__sample__)):
+        for __i__ in range(NumberOfSamples):
+            __start__ = time.time() / 60
 
-            print(f'\r<CoarseModel: BuildDataset: Generating dataset: {len(__sample__) - (__i__ + 1)} '
+            print(f'\r<CoarseModel: BuildDataset: Generating dataset: {len(__sample__) - __i__} '
                   f'samples remaining')
 
-            __temp__.append([__sample__[__i__], Model.SimulateModel(Parameters=__sample__[__i__], Rounding=Rounding)])
-            self.__filing__.Append(Filename=self.__files__[1], List=__temp__[-1])
+            # Attempt to retrieve a duplicate
+            __result__ = self.__filing__.Duplicate(Filename=self.__files__[1], List=[__sample__[__i__], []])
+
+            # No duplicate found, simulate and store data point
+            if not isinstance(__result__, list):
+                __temp__.append([__sample__[__i__], Model.SimulateModel(Parameters=__sample__[__i__],
+                                                                        Rounding=Rounding)])
+                self.__filing__.Append(Filename=self.__files__[1], List=__temp__[-1])
+
+            # Duplicate found
+            else:
+                __temp__.append(__result__)
+
+            print(f'\t Time taken for simulation {__i__ + 1}: {round(time.time() / 60 - __start__, 2)}', end='')
 
         return __temp__
 

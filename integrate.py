@@ -8,8 +8,13 @@ from AntennaDesign.__init__ import *
 
 __search__ = False
 __get_dimensions__ = False
+__train_validate_test_ratio__ = [0.8, 0.1, 0.1]
+__train_freq_range__ = [2.3, 2.5]
 
 if __name__ == '__main__':
+    __freq_min__ = 1.0
+    __freq_max__ = 7.0
+
     if __get_dimensions__:
         # Conventional antenna design dimensions
         RMSP = RectangularMicrostripPatch.RMPA(fr=2.4e9, er=3.55)
@@ -73,27 +78,28 @@ if __name__ == '__main__':
 
     filing = Filing(Debugging=True)
 
+    antenna = ModelGeometry(ParameterStepSize=1.0,
+                            Objectives=[[2.36, 2.44, 0.023]],
+                            Simulator=simulator,
+                            ExploreSpace=[[-11, 11, -5, 10, 0.535, 0.57], [-12, 12, -9.5, 8, 0, 0.035]],
+                            FrequencyRangeMin=__freq_min__,
+                            FrequencyRangeMax=__freq_max__,
+                            Debugging=True)
+
+    for __i__ in parameter:
+        antenna.AddParameter(Name=__i__[0], Range=__i__[1])
+
+    for __i__ in model:
+        antenna.AddSequence(Material=__i__[0],
+                            ComponentName=__i__[1],
+                            Type=__i__[2],
+                            Operation=__i__[3],
+                            Z=__i__[4],
+                            Geometry=__i__[5])
+    antenna.SetWaveguidePort(PortNumber=waveguide[0], Orientation=waveguide[1], ExcitationDirection=waveguide[2],
+                             XRange=waveguide[3], YRange=waveguide[4], ZRange=waveguide[5])
+
     if __search__:
-        antenna = ModelGeometry(ParameterStepSize=1.0,
-                                Objectives=[[2.36, 2.44, 0.023]],
-                                Simulator=simulator,
-                                ExploreSpace=[[-11, 11, -5, 10, 0.535, 0.57], [-12, 12, -9.5, 8, 0, 0.035]],
-                                FrequencyRangeMin=1.0,
-                                FrequencyRangeMax=7.0,
-                                Debugging=True)
-
-        for __i__ in parameter:
-            antenna.AddParameter(Name=__i__[0], Range=__i__[1])
-
-        for __i__ in model:
-            antenna.AddSequence(Material=__i__[0],
-                                ComponentName=__i__[1],
-                                Type=__i__[2],
-                                Operation=__i__[3],
-                                Z=__i__[4],
-                                Geometry=__i__[5])
-        antenna.SetWaveguidePort(PortNumber=waveguide[0], Orientation=waveguide[1], ExcitationDirection=waveguide[2], XRange=waveguide[3],
-                                 YRange=waveguide[4], ZRange=waveguide[5])
 
         SSO = GA(PopulationSize=12,
                  NumberOfOffspring=6,
@@ -109,56 +115,85 @@ if __name__ == '__main__':
 
     else:
         # Surrogate modeling
-        data = filing.Read(Filename='\\SSO\\Test\\Explored')
-        __train__ = []
-        __validate__ = []
-        __test__ = []
-        print(len(data))
-        print(len(data[0][1][0][0]))
-        for __i__ in data:
-            __temp__ = []
-            __train__.append([__i__[0]])
-            __validate__.append([__i__[0]])
-            __test__.append([__i__[0]])
-            for __j__ in range(len(__i__[1][1][0])):
-                if 2.3 <= __i__[1][1][0][__j__] <= 2.5:
-                    __temp__.append(10 ** (__i__[1][1][1][__j__] / 10))
-            __train__[-1].append(copy.deepcopy(__temp__))
-            __validate__[-1].append(copy.deepcopy(__temp__))
-            __test__[-1].append(copy.deepcopy(__temp__))
+        __raw_data__ = filing.Read(Filename='\\SSO\\Test\\Best')[0]
 
-        __train__ = [__train__[0]]
-        __validate__ = [__validate__[0]]
-        __test__ = [__test__[0]]
-        __nn__ = surrogate(NumberOfInputChannels=len(__train__[0][0]), NumberOfHiddenLayers=3,
-                           NumberOfOutputChannels=len(__train__[0][1]),
+        __parameters__ = __raw_data__[0]
+        __return_loss__ = __raw_data__[1][0]
+        __gain__ = __raw_data__[1][1]
+
+        # Initialize return loss and gain surrogates
+        __nn__ = surrogate(NumberOfInputChannels=len(__parameters__), NumberOfHiddenLayers=3,
+                           NumberOfOutputChannels=len(__return_loss__[0]), Directory=None,
                            Debugging=True, Filing=filing)
-        results = __nn__.Train(BatchSize=1, LearningRate=1e-3, TrainingData=__train__,
-                               ValidationData=__validate__, TestingData=__test__,
-                               TrainDurationMinutes=1, NRMSEConvergence=0.0005)
-        plt.plot(range(len(results[0])), results[0], 'ob')
-        plt.plot(range(len(results[1])), results[1], 'k')
-        plt.plot(range(len(results[2])), results[2], 'o')
-        plt.show()
-        antenna = ModelGeometry(ParameterStepSize=0.5, Objectives=[], Simulator=simulator, ExploreSpace=[],
-                                FrequencyRangeMin=2.3, FrequencyRangeMax=2.5, Debugging=True)
-        for __i__ in parameter:
-            antenna.AddParameter(Name=__i__[0], Range=__i__[1])
-        for __i__ in model:
-            antenna.AddSequence(Material=__i__[0], ComponentName=__i__[1], Type=__i__[2], Operation=__i__[3],
-                                Z=__i__[4], Geometry=__i__[5])
-        antenna.SetWaveguidePort(PortNumber=waveguide[0], Orientation=waveguide[1], ExcitationDirection=waveguide[2],
-                                 XRange=waveguide[3], YRange=waveguide[4], ZRange=waveguide[5])
-        __data__ = __nn__.BuildDataset(Model=antenna, Parameters=parameter, NumberOfSamples=300, Rounding=3)
 
-        # while True:
-        #     u_l = [1, 10]
-        #     result = u_l[0] + random.uniform(1, 0) * (u_l[1] - u_l[0])
-        #     if result < u_l[0]:
-        #         print('FUCK')
-        #         break
-        #     elif result > u_l[1]:
-        #         print("FUCK")
-        #         break
-        #     else:
-        #         print(result)
+        # Generate dataset
+        __data__ = __nn__.BuildDataset(Model=antenna,
+                                       Parameters=[[__i__ - 0.2, __i__ + 0.2] for __i__ in __parameters__],
+                                       NumberOfSamples=100, Rounding=12)
+
+        # Create training, validation, and testing data sub-sets
+        __s1_train__ = []
+        __s1_validate__ = []
+        __s1_test__ = []
+        __s2_train__ = []
+        __s2_validate__ = []
+        __s2_test__ = []
+        __not_full__ = True
+        while __not_full__:
+            for __i__ in __data__:
+
+                if len(__s1_train__) < len(__i__) * __train_validate_test_ratio__[0] and \
+                    np.random.choice([True, False],
+                                     p=[__train_validate_test_ratio__[0], 1 - __train_validate_test_ratio__[0]]):
+
+                    __s1_train__.append([copy.deepcopy(__i__[0]), []])
+                    for __j__ in range(len(__i__[1][0][0])):
+                        if __train_freq_range__[0] <= __i__[1][0][0][__j__] <= __train_freq_range__[1]:
+                            __s1_train__[-1][1].append(10 ** (__i__[1][0][1][__j__] / 20))
+                    __s2_train__.append([copy.deepcopy(__i__[0]), []])
+                    for __j__ in range(len(__i__[1][1][0])):
+                        if __train_freq_range__[0] <= __i__[1][1][0][__j__] <= __train_freq_range__[1]:
+                            __s2_train__[-1][1].append(1 / (1 + np.exp(10 ** (__i__[1][1][1][__j__] / 10))))
+
+                elif len(__s1_validate__) < len(__i__) * __train_validate_test_ratio__[1] and \
+                        np.random.choice([True, False],
+                                         p=[__train_validate_test_ratio__[1], 1 - __train_validate_test_ratio__[1]]):
+
+                    __s1_validate__.append([copy.deepcopy(__i__[0]), []])
+                    for __j__ in range(len(__i__[1][0][0])):
+                        if __train_freq_range__[0] <= __i__[1][0][0][__j__] <= __train_freq_range__[1]:
+                            __s1_validate__[-1][1].append(10 ** (__i__[1][0][1][__j__] / 20))
+                    __s2_validate__.append([copy.deepcopy(__i__[0]), []])
+                    for __j__ in range(len(__i__[1][1][0])):
+                        if __train_freq_range__[0] <= __i__[1][1][0][__j__] <= __train_freq_range__[1]:
+                            __s2_validate__[-1][1].append(1 / (1 + np.exp(10 ** (__i__[1][1][1][__j__] / 10))))
+
+                elif len(__s1_test__) < len(__i__) * __train_validate_test_ratio__[2] and \
+                        np.random.choice([True, False],
+                                         p=[__train_validate_test_ratio__[2], 1 - __train_validate_test_ratio__[2]]):
+
+                    __s1_test__.append([copy.deepcopy(__i__[0]), []])
+                    for __j__ in range(len(__i__[1][0][0])):
+                        if __train_freq_range__[0] <= __i__[1][0][0][__j__] <= __train_freq_range__[1]:
+                            __s1_test__[-1][1].append(10 ** (__i__[1][0][1][__j__] / 20))
+                    __s2_test__.append([copy.deepcopy(__i__[0]), []])
+                    for __j__ in range(len(__i__[1][1][0])):
+                        if __train_freq_range__[0] <= __i__[1][1][0][__j__] <= __train_freq_range__[1]:
+                            __s2_test__[-1][1].append(1 / (1 + np.exp(10 ** (__i__[1][1][1][__j__] / 10))))
+
+            if len(__data__) == (len(__s1_train__) + len(__s1_validate__) + len(__s1_test__)):
+                __not_full__ = False
+
+        # Initialize the surrogates (return loss surrogate and gain surrogate)
+        __surrogate_1__ = surrogate(NumberOfHiddenLayers=3, NumberOfInputChannels=len(__data__[0][0]),
+                                    NumberOfOutputChannels=len(__s1_train__[0][1]), Filing=filing,
+                                    Directory='return loss', Debugging=True)
+        __surrogate_2__ = surrogate(NumberOfHiddenLayers=3, NumberOfInputChannels=len(__data__[0][0]),
+                                    NumberOfOutputChannels=len(__s2_train__[0][1]), Filing=filing,
+                                    Directory='gain', Debugging=True)
+
+        # Train the surrogates
+        __surrogate_1__.Train(TrainingData=__s1_train__, ValidationData=__s1_validate__, TestingData=__s1_test__,
+                              LearningRate=1e-3, NumberOfEpochs=None, TrainDurationMinutes=10, NRMSEConvergence=0.05)
+        __surrogate_2__.Train(TrainingData=__s2_train__, ValidationData=__s2_validate__, TestingData=__s2_test__,
+                              LearningRate=1e-3, NumberOfEpochs=None, TrainDurationMinutes=10, NRMSEConvergence=0.05)

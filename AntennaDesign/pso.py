@@ -1,9 +1,93 @@
+# The initialization module for the package AntennaDesign, which will be a list of common public libraries,
+# see AntennaDesign.__init__ for more information
 from AntennaDesign.__init__ import *
 
 
 class PSO:
+    """
+    Description:
+    ------------
+    Based on particle swarm optimizer, this class determines the optimal solution given the trained surrogates as its
+    objectives.
+
+    Attributes:
+    -----------
+    __boundary__:                   list
+                                    A list of parameter boundaries per parameter in the form of
+                                    [[lower bound 0, upper bound 0], [lower bound 1, upper bound 1], ...,
+                                    [lower bound n, upper bound n]].
+    __surrogate__:                  list
+                                    A list with two surrogates of type CoarseModel. Each surrogate is assumed to be
+                                    trained and ready for predictions.
+    __particle__:                   list
+                                    A list of particles for exploration. Each particle has the form of
+                                    [position, velocity, current fitness, personal best fitness, personal best
+                                    position].
+    __global_best__:                list
+                                    The particle with the best solution in the form of [position, fitness].
+    __w__:                          float
+                                    The inertia weight for the particle swarm optimizer.
+    __c1__:                         float
+                                    The personal influence of a particle.
+    __c2__:                         float
+                                    The social influence of a particle.
+
+    Methods:
+    --------
+    __init__(NumberOfParticles=None, ParameterRanges=None, Objective=None):
+                                    The constructor of the class, where the NumberOfParticles, ParameterRanges, and
+                                    Objective must be given as arguments.
+    Optimize(NumberOfIterations=None, Convergence=None, W=0.9, C1=1.5, C2=1.5):
+                                    Begins the optimization process, where the NumberOfIterations and/or Convergence
+                                    arguments are required before beginning.
+    _objective():
+                                    The fitness evaluation of the particles, where the two surrogates are used for
+                                    determining the fitness of the return loss and gain responses.
+    _update_personal_best():
+                                    Updates the personal best per particle.
+    _update_global_best():
+                                    Updates the global best amongst the particles for the nth iteration.
+    _update_velocity():
+                                    Updates the velocities of each parameter within each particle.
+    _update_position():
+                                    Updates the position of each parameter within each particle.
+
+    Notes:
+    ------
+    None.
+    """
+
     def __init__(self, NumberOfParticles=None, ParameterRanges=None, Objective=None):
-        # Parameter ranges is used to initialize particles
+        """
+        Description:
+        ------------
+        The constructor of the PSO class. It expects three parameters as arguments, specifically the
+        NumberOfParticles, ParameterRanges, and Objective. The particles are then initialized with random parameter
+        values within their defined ranges (Parameter Ranges n). Their velocities are initialized to a random value
+        between 0 and 1. Finally, the global best is found by first determining the fitness values of each parameter
+        per particle, which is considered as the 0th iteration.
+
+        Parameters:
+        -----------
+        NumberOfParticles:          int
+                                    Defined by the user, this is used  to initialize the number of particles for the
+                                    class.
+        ParameterRanges:            list
+                                    A list of lists, where each parameter is a list of the form [lower bound,
+                                    upper bound], which is used to describe the bounds per parameter of concern.
+        Objective:                  list
+                                    A list that contains two elements of CoarseModel type. This is used for finding/
+                                    determining the fitness's of the return loss and gain responses from the trained
+                                    surrogates.
+
+        Returns:
+        --------
+        None.
+
+        Notes:
+        ------
+        None.
+        """
 
         if NumberOfParticles is None or ParameterRanges is None or Objective is None:
             raise Exception('<PSO: One or more arguments are of None type>')
@@ -31,7 +115,7 @@ class PSO:
                 self.__particle__[-1][1].append(random.uniform(a=0, b=1))
 
         # Update fitness values of particles
-        self.__objective__()
+        self._objective()
 
         # Initialize personal best
         for __i__ in range(len(self.__particle__)):
@@ -50,6 +134,34 @@ class PSO:
                 self.__global_best__[1][0] = copy.deepcopy(self.__particle__[__i__][3][0])
 
     def Optimize(self, NumberOfIterations=None, Convergence=None, W=0.9, C1=1.5, C2=1.5):
+        """
+        Description:
+        ------------
+        Iterates through the explore space (the parameter ranges) in order to find the optimal solution (global best).
+
+        Parameters:
+        -----------
+        NumberOfIterations:         int
+                                    The number of iterations the particle swarm optimizer is allowed to execute whilst
+                                    determining the optimal solution.
+        Convergence:                float
+                                    Used for early stopping/termination if there are still iterations left to execute.
+        W:                          float
+                                    The inertia weight for the particle swarm optimizer.
+        C1:                         float
+                                    The personal influence per particle for the particle swarm optimizer.
+        C2:                         float
+                                    The social influence per particle for the particle swarm optimizer.
+
+        Returns:
+        --------
+        Returns the optimal solution, specifically the parameter values from the self.__global_best__ variable.
+
+        Notes:
+        ------
+        None.
+        """
+
         if NumberOfIterations is None and Convergence is None:
             raise Exception('<PSO: Optimize: Both arguments are of None type>')
         if NumberOfIterations is None:
@@ -64,19 +176,19 @@ class PSO:
         for __i__ in range(NumberOfIterations):
 
             # Update velocity
-            self.__update_velocity__()
+            self._update_velocity()
 
             # Update position
-            self.__update_position__()
+            self._update_position()
 
             # Calculate fitness
-            self.__objective__()
+            self._objective()
 
             # Update personal best
-            self.__update_personal_best__()
+            self._update_personal_best()
 
             # Update global best
-            self.__update_global_best__()
+            self._update_global_best()
 
             # Update inertia weight
             self.__w__ -= W / NumberOfIterations
@@ -84,17 +196,54 @@ class PSO:
             print(f'\r<PSO: Optimize: Iteration {__i__} \t Global best is: {self.__global_best__[0]}>', end='')
 
             # Check for convergence
-            if Convergence is not None:
-                if self.__global_best__[1] <= Convergence:
-                    break
+            if Convergence is not None and (self.__global_best__[1][0] <= Convergence or
+                                            self.__global_best__[1][1] <= Convergence):
+                break
 
         return self.__global_best__[0]
 
-    def __objective__(self):
+    def _objective(self):
+        """
+        Description:
+        ------------
+        Determines the fitness values for each parameter per particle. The two surrogates, assumed trained, are used
+        for the return loss and gain responses.
+
+        Parameters:
+        -----------
+        None.
+
+        Returns:
+        --------
+        None.
+
+        Notes:
+        ------
+        None.
+        """
         for __i__ in range(len(self.__particle__)):
             self.__particle__[__i__][2][0] = 0.1 * self.__particle__[__i__][0][0] ** 2 + 18 * self.__particle__[__i__][0][0] - 48
 
-    def __update_personal_best__(self):
+    def _update_personal_best(self):
+        """
+        Description:
+        ------------
+        Updates the personal best per particle by comparing the current fitness and personal best fitness values whilst
+        adopting multi-objective theory for only two objectives.
+
+        Parameters:
+        -----------
+        None.
+
+        Returns:
+        --------
+        None.
+
+        Notes:
+        ------
+        None.
+        """
+
         for __i__ in range(len(self.__particle__)):
             if (self.__particle__[__i__][2][0] < self.__particle__[__i__][3][0]
                     and self.__particle__[__i__][2][1] <= self.__particle__[__i__][3][1]) or \
@@ -103,7 +252,26 @@ class PSO:
                 self.__particle__[__i__][3] = copy.deepcopy(self.__particle__[__i__][2])
                 self.__particle__[__i__][4] = copy.deepcopy(self.__particle__[__i__][0])
 
-    def __update_global_best__(self):
+    def _update_global_best(self):
+        """
+        Description:
+        ------------
+        Updates the global best for the current iteration by simply comparing the current global best fitness values
+        with the personal best fitness values from the particles.
+
+        Parameters:
+        -----------
+        None.
+
+        Returns:
+        --------
+        None.
+
+        Notes:
+        ------
+        None.
+        """
+
         for __i__ in range(len(self.__particle__)):
             if (self.__particle__[__i__][3][0] < self.__global_best__[1][0] and
                 self.__particle__[__i__][3][1] <= self.__global_best__[1][1]) or \
@@ -112,7 +280,26 @@ class PSO:
                 self.__global_best__[0] = copy.deepcopy(self.__particle__[__i__][4])
                 self.__global_best__[1] = copy.deepcopy(self.__particle__[__i__][3])
 
-    def __update_velocity__(self):
+    def _update_velocity(self):
+        """
+        Description:
+        ------------
+        Updates the velocities per parameter per particle. This function is first used as the _update_position() needs
+        an updated velocity per parameter per particle.
+
+        Parameters:
+        -----------
+        None.
+
+        Returns:
+        --------
+        None.
+
+        Notes:
+        ------
+        None.
+        """
+
         for __i__ in range(len(self.__particle__)):
             for __j__ in range(len(self.__particle__[__i__][1])):
                 self.__particle__[__i__][1][__j__] = \
@@ -122,7 +309,25 @@ class PSO:
                     self.__c2__ * random.uniform(0, 1) * \
                     (self.__global_best__[0][__j__] - self.__particle__[__i__][0][__j__])
 
-    def __update_position__(self):
+    def _update_position(self):
+        """
+        Description:
+        ------------
+        Updates the positions (parameter values) per parameter per particle.
+
+        Parameters:
+        -----------
+        None.
+
+        Returns:
+        --------
+        None.
+
+        Notes:
+        ------
+        None.
+        """
+
         for __i__ in range(len(self.__particle__)):
             for __j__ in range(len(self.__particle__[__i__][0])):
                 # Update position
