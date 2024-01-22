@@ -163,7 +163,7 @@ class CoarseModel:
         self.__beta_2__ = None
         self.__epsilon__ = None
         self.__alpha__ = None
-        self.__N__ = None
+        self.__N__ = 1
         self.__init_N__ = 0
         self.__time_step__ = 0
 
@@ -204,7 +204,7 @@ class CoarseModel:
 
         # 3D array(s)
         __init_num_weights__ = int(round(self.__phi_k__ * self.__s_c__ ** (self.__d_s__ - 1)))
-        self.__weights_array__ = [[copy.deepcopy([random.normalvariate(mu=0, sigma=1)])
+        self.__weights_array__ = [[[0.0]
                                    for _ in range(__init_num_weights__)]]
         self.__grad__ = [[copy.deepcopy([0.0]) for _ in range(__init_num_weights__)]]
         self.__mean__ = [[copy.deepcopy([0.0]) for _ in range(__init_num_weights__)]]
@@ -225,7 +225,7 @@ class CoarseModel:
                 # links into it from previous layers
                 __num_neuron_weights__ = int(round(self.__phi_k__ * (self.__s_c__ ** (__i__ - 1)), 0))
                 self.__weights_array__.append([
-                    [copy.deepcopy(random.normalvariate(mu=0, sigma=1)) for _ in range(__num_neuron_weights__)]
+                    [0.0 for _ in range(__num_neuron_weights__)]
                     for _ in range(__num_neurons__ + 1)])
                 self.__grad__.append([
                     [0.0 for _ in range(__num_neuron_weights__)]
@@ -305,18 +305,33 @@ class CoarseModel:
         if Model is None or Parameters is None:
             raise Exception('<CoarseModel: CollectData: One or more arguments are of None type>')
 
-        # Initialize LHS instance
-        __lhs__ = LHS(xlimits=np.asarray(Parameters))
-        # Get samples from __lhs__ variable
-        __sample__ = __lhs__(NumberOfSamples).tolist()
+        __sample__ = []
+
+        # Loop until __sample__ has the same number of samples as the defined NumberOfSamples. Note that
+        # the bounds must be checked so that the parameters, collectively, doe not go beyond the boundaries
+        while len(__sample__) < NumberOfSamples:
+
+            # Initialize LHS instance
+            __lhs__ = LHS(xlimits=np.asarray(Parameters))
+            # Get samples from __lhs__ variable
+            __temp__ = __lhs__(NumberOfSamples).tolist()
+
+            for __i__ in __temp__:
+                try:
+                    Model.CheckBoundary(Parameters=__i__, Rounding=Rounding)
+
+                    if not __sample__.__contains__(__i__):
+                        __sample__.append(__i__)
+
+                except Exception as __error__:
+                    if self.__debugging__:
+                        print(f'<CoarseModel: BuildDataset: {__error__}>')
+
         # Data list that keeps all samples in the form of [parameter values, simulation results]
         __temp__ = []
 
         for __i__ in range(NumberOfSamples):
             __start__ = time.time() / 60
-
-            print(f'\r<CoarseModel: BuildDataset: Generating dataset: {len(__sample__) - __i__} '
-                  f'samples remaining')
 
             # Attempt to retrieve a duplicate
             __result__ = self.__filing__.Duplicate(Filename=self.__files__[1], List=[__sample__[__i__], []])
@@ -331,7 +346,9 @@ class CoarseModel:
             else:
                 __temp__.append(__result__)
 
-            print(f'\t Time taken for simulation {__i__ + 1}: {round(time.time() / 60 - __start__, 2)}', end='')
+            print(f'\r<CoarseModel: BuildDataset: Generating dataset: {len(__sample__) - __i__} '
+                  f'samples remaining \t Time taken for simulation {__i__ + 1}: '
+                  f'{round(time.time() / 60 - __start__, 2)}', end='')
 
         return __temp__
 
@@ -459,15 +476,15 @@ class CoarseModel:
                 print('\033[0;31;40m', end='')
 
             elif 0.3 <= __train_loss__[-1] <= 1 or 0.3 <= __validation_loss__[-1] <= 1:
-                self.__alpha__ = 1e-3
+                # self.__alpha__ = 1e-3
                 print('\033[0;33;40m', end='')
 
             elif 0.2 <= __train_loss__[-1] < 0.3 or 0.2 <= __validation_loss__[-1] < 0.3:
-                self.__alpha__ = 1e-4
+                # self.__alpha__ = 1e-4
                 print('\033[0;34;40m', end='')
 
             elif 0.1 <= __train_loss__[-1] < 0.2 or 0.1 <= __validation_loss__[-1] < 0.2:
-                self.__alpha__ = 1e-5
+                # self.__alpha__ = 1e-5
                 print('\033[0;32;40m', end='')
 
             else:
@@ -532,7 +549,7 @@ class CoarseModel:
                 self._activation(__input__=__input__[__i__] + self.__weights_array__[0][__i__][0])
 
             # Update average output of layer neuron
-            self.__out_j__[0][__i__] += self.__neuron_array__[0][__i__] / self.__N__
+            self.__out_j__[0][__i__] = self.__neuron_array__[0][__i__]
 
         # Perform actual feed-forward process
         # Layer loop
@@ -545,10 +562,12 @@ class CoarseModel:
                 # Update average output of layer neuron
                 self.__out_j__[__i__][__j__] += self.__neuron_array__[__i__][__j__] / self.__N__
 
-        self._update_loss(__target__=__target__, __learn__=__learn__)
+        if __target__ is not None:
+            self._update_loss(__target__=__target__, __learn__=__learn__)
 
         if __learn__:
             self.__init_N__ += 1
+            self._update_gradients()
             if self.__init_N__ % self.__N__ == 0:
                 self._update_weights()
                 return
@@ -591,13 +610,11 @@ class CoarseModel:
         __total__ += self.__weights_array__[__layer_index__][-1][__neuron_index__]
 
         # Update average summation input to neuron __neuron_index__
-        self.__in_j__[__layer_index__][__neuron_index__] += __total__ / self.__N__
+        self.__in_j__[__layer_index__][__neuron_index__] = __total__
 
         return __total__
 
-    # Combines activation function and output
-    @staticmethod
-    def _activation(__input__):
+    def _activation(self, __input__):
         """
         Description:
         ------------
@@ -617,7 +634,7 @@ class CoarseModel:
         None.
         """
 
-        return 1 / (1 + np.exp(-__input__))
+        return 1 / (1 + np.exp(-1 * __input__))
 
     def _activation_derivative(self, __input__):
         """
@@ -639,7 +656,7 @@ class CoarseModel:
         None.
         """
 
-        return self._activation(__input__=__input__) * (1 - self._activation(__input__=__input__))
+        return (1 / (1 + np.exp(-1 * __input__))) * (1 - 1 / (1 + np.exp(-1 * __input__)))
 
     # Update errors
     def _update_loss(self, __target__, __learn__=True):
@@ -697,7 +714,7 @@ class CoarseModel:
         """
 
         # Update gradients
-        self._update_gradients()
+        # self._update_gradients()
 
         self.__time_step__ += 1
 
@@ -714,8 +731,6 @@ class CoarseModel:
                         (self.__mean__[__i__][__j__][__k__] /
                          (self.__variance__[__i__][__j__][__k__] ** 0.5 +
                           self.__epsilon__))
-                    self.__mean__[__i__][__j__][__k__] = 0.0
-                    self.__variance__[__i__][__j__][__k__] = 0.0
 
         # Save weights
         if self.__filing__ is not None:
@@ -751,16 +766,16 @@ class CoarseModel:
             # Update gradient values. The '-1' is for the skipping the bias neuron since it does not have an official
             # output
             for __j__ in range(len(self.__grad__[-1]) - 1):
-                self.__grad__[-1][__j__][__i__] = self.__delta__[-1][__i__] * self.__out_j__[-2][__j__]
+                self.__grad__[-1][__j__][__i__] += self.__delta__[-1][__i__] * self.__out_j__[-2][__j__] / self.__N__
 
                 # Clear output
-                self.__out_j__[-2][__j__] = 0.0
+                # self.__out_j__[-2][__j__] = 0.0
 
             # Update bias gradient value
-            self.__grad__[-1][-1][__i__] = self.__delta__[-1][__i__]
+            self.__grad__[-1][-1][__i__] += self.__delta__[-1][__i__] / self.__N__
 
             # Clear input
-            self.__in_j__[-1][__i__] = 0.0
+            # self.__in_j__[-1][__i__] = 0.0
 
         # Hidden layers
         for __i__ in range(len(self.__delta__) - 2, -1, -1):
@@ -775,23 +790,23 @@ class CoarseModel:
                 self.__delta__[__i__][__j__] = self._activation_derivative(self.__in_j__[__i__][__j__]) * __sum__
 
                 # Clear input
-                self.__in_j__[__i__][__j__] = 0.0
+                # self.__in_j__[__i__][__j__] = 0.0
 
                 # Conditioned only for the hidden layers as there is no out_j_i from the input layer
                 if __i__ > 0:
                     # Update the gradients involved with the current delta value
                     for __k__ in range(len(self.__grad__[__i__]) - 1):
-                        self.__grad__[__i__][__k__][__j__] = self.__delta__[__i__][__j__] * \
-                                                             self.__out_j__[__i__ - 1][__k__]
+                        self.__grad__[__i__][__k__][__j__] += self.__delta__[__i__][__j__] * \
+                                                              self.__out_j__[__i__ - 1][__k__] / self.__N__
                         # Clear output
-                        self.__out_j__[__i__ - 1][__k__] = 0.0
+                        # self.__out_j__[__i__ - 1][__k__] = 0.0
 
                     # Update bias gradient for delta n
-                    self.__grad__[__i__][-1][__j__] = self.__delta__[__i__][__j__]
+                    self.__grad__[__i__][-1][__j__] += self.__delta__[__i__][__j__] / self.__N__
 
                 # Conditioned when in the first hidden layer, the conditioned input layer
                 else:
-                    self.__grad__[0][__j__][0] = self.__delta__[__i__][__j__]
+                    self.__grad__[0][__j__][0] += self.__delta__[__i__][__j__] / self.__N__
 
     def _update_mean_variance(self):
         """

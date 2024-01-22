@@ -241,12 +241,10 @@ class SearchSpaceOptimizer:
                                           for __i__ in self.__offspring__]
 
             # Select which individuals between the pool and offspring to choose from according to their
-            # fitness values. The selection will be based on the strength of their fitness values in the
-            # form of a probability value; the lower the fitness value, the higher the chance of being
-            # selected for the next generation
+            # fitness values; the lower the fitness value the better
             __new_generation__ = []
             __chosen_index__ = []
-            __best_minimum__ = None
+            __best_minimum__ = self.__pool_fitness__[0]
 
             for __i__ in range(self.__population_size__):
 
@@ -256,17 +254,25 @@ class SearchSpaceOptimizer:
                 while __j__ < len(self.__offspring_fitness__) and not __new_individual__:
                     if self.__offspring_fitness__[__j__][0] < self.__pool_fitness__[__i__][0] and \
                             self.__offspring_fitness__[__j__][1] <= self.__pool_fitness__[__i__][1] and \
-                            not __chosen_index__.__contains__(self.__offspring_fitness__[__j__]):
+                            not __chosen_index__.__contains__(__j__):
                         __chosen_index__.append(__j__)
                         __new_generation__.append(copy.deepcopy(self.__offspring__[__j__]))
                         __new_individual__ = True
 
+                        if self.__offspring_fitness__[__j__][0] < __best_minimum__[0] and \
+                                self.__offspring_fitness__[__j__][1] <= __best_minimum__[1]:
+                            __best_minimum__ = self.__offspring_fitness__[__j__]
+
                     elif self.__offspring_fitness__[__j__][0] <= self.__pool_fitness__[__i__][0] and \
                             self.__offspring_fitness__[__j__][1] < self.__pool_fitness__[__i__][1] and \
-                            not __chosen_index__.__contains__(self.__offspring_fitness__[__j__]):
+                            not __chosen_index__.__contains__(__j__):
                         __chosen_index__.append(__j__)
                         __new_generation__.append(copy.deepcopy(self.__offspring__[__j__]))
                         __new_individual__ = True
+
+                        if self.__offspring_fitness__[__j__][0] <= __best_minimum__[0] and \
+                                self.__offspring_fitness__[__j__][1] < __best_minimum__[1]:
+                            __best_minimum__ = self.__offspring_fitness__[__j__]
 
                     else:
                         pass
@@ -276,11 +282,11 @@ class SearchSpaceOptimizer:
                 if not __new_individual__:
                     __new_generation__.append(copy.deepcopy(self.__pool__[__i__]))
 
-                if __i__ == 0:
-                    if len(__chosen_index__) == 1:
-                        __best_minimum__ = self.__offspring_fitness__[__chosen_index__[0]]
-                    else:
-                        __best_minimum__ = self.__pool_fitness__[0]
+                    if (self.__pool_fitness__[__j__][0] < __best_minimum__[0] and
+                        self.__pool_fitness__[__j__][1] <= __best_minimum__[1]) or \
+                            (self.__pool_fitness__[__j__][0] <= __best_minimum__[0] and
+                             self.__pool_fitness__[__j__][1] < __best_minimum__[1]):
+                        __best_minimum__ = self.__pool_fitness__[__j__]
 
             # Save the evaluation results (fitness values) of the population
             self.__filing__.Append(Filename=self.__files__[3], List=self.__pool_fitness__)

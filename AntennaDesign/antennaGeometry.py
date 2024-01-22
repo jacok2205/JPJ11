@@ -514,7 +514,7 @@ class ModelGeometry:
         if Parameters[Index] + self.__parameter_step_size__ <= self.__parameter__['range'][Index][1]:
             Parameters[Index] = round(Parameters[Index] + self.__parameter_step_size__, Rounding)
 
-            # Test to see if it is within its range
+            # Horizontal to see if it is within its range
             try:
                 self.CheckBoundary(Parameters=Parameters, Rounding=Rounding)
 
@@ -558,7 +558,7 @@ class ModelGeometry:
         if Parameters[Index] - self.__parameter_step_size__ >= self.__parameter__['range'][Index][0]:
             Parameters[Index] = round(Parameters[Index] - self.__parameter_step_size__, Rounding)
 
-            # Test to see if it is within its range
+            # Horizontal to see if it is within its range
             try:
                 self.CheckBoundary(Parameters=Parameters, Rounding=Rounding)
 

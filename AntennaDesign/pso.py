@@ -109,7 +109,7 @@ class PSO:
             for __j__ in ParameterRanges:
                 # Initialize particle position with following formula:
                 # Parameter n = Lower bound + rand(1, 0) * (Upper bound - Lower bound)
-                self.__particle__[-1][0].append(__j__[0] + random.uniform(a=__j__[0], b=__j__[1]))
+                self.__particle__[-1][0].append(__j__[0] + random.uniform(a=1, b=0) * (__j__[1] - __j__[0]))
 
                 # Initialize particle velocity with a uniform number between 0 and 1
                 self.__particle__[-1][1].append(random.uniform(a=0, b=1))
@@ -119,7 +119,7 @@ class PSO:
 
         # Initialize personal best
         for __i__ in range(len(self.__particle__)):
-            self.__particle__[__i__][3][0] = copy.deepcopy(self.__particle__[__i__][2][0])
+            self.__particle__[__i__][3] = copy.deepcopy(self.__particle__[__i__][2])
             self.__particle__[__i__][4] = copy.deepcopy(self.__particle__[__i__][0])
 
         # Initialize global best
@@ -131,7 +131,7 @@ class PSO:
                     (self.__particle__[__i__][3][0] <= self.__global_best__[1][0] and
                      self.__particle__[__i__][3][1] < self.__global_best__[1][1]):
                 self.__global_best__[0] = copy.deepcopy(self.__particle__[__i__][4])
-                self.__global_best__[1][0] = copy.deepcopy(self.__particle__[__i__][3][0])
+                self.__global_best__[1] = copy.deepcopy(self.__particle__[__i__][3])
 
     def Optimize(self, NumberOfIterations=None, Convergence=None, W=0.9, C1=1.5, C2=1.5):
         """
@@ -173,7 +173,20 @@ class PSO:
         self.__c1__ = C1
         self.__c2__ = C2
 
+        r_fitness = []
+        g_fitness = []
+
         for __i__ in range(NumberOfIterations):
+
+            __r_temp__ = []
+            __g_temp__ = []
+
+            for __j__ in self.__particle__:
+                __r_temp__.append(__j__[2][0])
+                __g_temp__.append(__j__[2][1])
+
+            r_fitness.append(sum(__r_temp__) / len(__r_temp__))
+            g_fitness.append(sum(__g_temp__) / len(__g_temp__))
 
             # Update velocity
             self._update_velocity()
@@ -200,7 +213,7 @@ class PSO:
                                             self.__global_best__[1][1] <= Convergence):
                 break
 
-        return self.__global_best__[0]
+        return self.__global_best__[0], r_fitness, g_fitness
 
     def _objective(self):
         """
@@ -221,8 +234,32 @@ class PSO:
         ------
         None.
         """
+        # for __i__ in range(len(self.__particle__)):
+        #     self.__particle__[__i__][2][0] = 0.1 * self.__particle__[__i__][0][0] ** 2 + 18 * self.__particle__[__i__][0][0] - 48
         for __i__ in range(len(self.__particle__)):
-            self.__particle__[__i__][2][0] = 0.1 * self.__particle__[__i__][0][0] ** 2 + 18 * self.__particle__[__i__][0][0] - 48
+            __temp__ = self.__surrogate__.FeedForward(__input__=self.__particle__[__i__][0], __target__=None, __return_outputs__=True)
+            __temp__[0] *= 10
+            __temp__[1] *= 10
+            __temp__[3] = -np.log(1 / __temp__[3] - 1)
+            __objective_met__ = False
+
+            if 2.30572 <= __temp__[0] <= 2.41428 and 2.38388 <= __temp__[1] <= 2.49612:
+                if __temp__[1] - __temp__[0] == 0:
+                    self.__particle__[__i__][2][0] = 1 / 1000 * 10 ** (-10 / 20)
+                else:
+                    self.__particle__[__i__][2][0] = 1 / (1000 * (__temp__[1] - __temp__[0])) * 10 ** (-10 / 20)
+
+                __objective_met__ = True
+
+            else:
+                # The penalty is the bandwidth (in Mega Hertz) multiplied by the minimum return loss
+                self.__particle__[__i__][2][0] = 1000 * (abs(__temp__[0] - 2.36) + abs(__temp__[1] - 2.44))
+
+            if __objective_met__:
+                self.__particle__[__i__][2][1] = 1 / __temp__[3]
+
+            else:
+                self.__particle__[__i__][2][1] = 1 / 10 ** (-80 / 10)
 
     def _update_personal_best(self):
         """
@@ -331,7 +368,8 @@ class PSO:
         for __i__ in range(len(self.__particle__)):
             for __j__ in range(len(self.__particle__[__i__][0])):
                 # Update position
-                self.__particle__[__i__][0][__j__] = self.__particle__[__i__][1][__j__] + self.__particle__[__i__][0][__j__]
+                self.__particle__[__i__][0][__j__] = self.__particle__[__i__][1][__j__] + \
+                                                     self.__particle__[__i__][0][__j__]
 
                 # Check if the new position is not out of bounds. Replace either to lower or upper bounds if
                 # the new position is less than the lower bounds or greater than the upper bounds
