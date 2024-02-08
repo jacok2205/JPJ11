@@ -1,3 +1,4 @@
+# Rough implementation for fast prototyping and demonstration purposes
 # Imports
 from AntennaDesign.filing import Filing
 from AntennaDesign.__init__ import *
@@ -17,10 +18,12 @@ if __name__ == '__main__':
     max_alpha = 0
     result = []
     result1 = []
+    fig0, ax0 = plt.subplots(1, 2)
 
     for __i__ in data:
         if __use_alpha__:
-            plt.plot(__i__[1][0][0], __i__[1][0][1])
+            ax0[0].plot(__i__[1][0][0], [10 ** (__j__ / 20) for __j__ in __i__[1][0][1]])
+            ax0[1].plot(__i__[1][1][0], [1 / (1 + np.exp(-10 ** (__j__ / 10))) for __j__ in __i__[1][1][1]])
         else:
             avg = [__i__[__j__][0] for __j__ in range(len(__i__))]
             result.append(sum(avg) / len(avg))
@@ -28,14 +31,19 @@ if __name__ == '__main__':
             result1.append(sum(avg) / len(avg))
 
     plt.grid()
-    plt.xlabel('Generation')
-    plt.ylabel('Fitness')
+    ax0[0].set_xlabel('Frequency (GHz)')
+    ax0[0].set_ylabel('Return loss (linear)')
+    ax0[1].set_xlabel('Frequency (GHz)')
+    ax0[1].set_ylabel(r'$\sigma$(Gain$_{linear}$)')
+    fig0.suptitle('Dataset')
+    ax0[0].set_xlim(2.0, 2.8)
+    ax0[0].grid()
+    figManager = plt.get_current_fig_manager()
+    figManager.window.showMaximized()
     plt.show()
     refined_data = []
     for __i__ in data:
         refined_data.append([__i__[0], []])
-        # for __j__ in range(len(refined_data[-1][0])):
-        #     refined_data[-1][0][__j__] /= 22.5
         __j__ = 0
         while __j__ < len(__i__[1][0][0]):
             if __i__[1][0][1][__j__] <= -10:
@@ -62,44 +70,55 @@ if __name__ == '__main__':
             refined_data[-1][1].append(1 / (1 + np.exp(-1 * 10 ** ((sum(gain) / len(gain)) / 10))))
             print(refined_data[-1])
     print(refined_data[0])
-    plt.plot(refined_data[0][1])
-    plt.plot(data[0][1][1][1])
+
+    surrogate = Surrogate(NumberOfHiddenLayers=3,
+                          NumberOfInputChannels=len(refined_data[0][0]),
+                          NumberOfOutputChannels=len(refined_data[0][1]),
+                          Debugging=True,
+                          Filing=filing)
+    loss1, loss2, loss3 = surrogate.Train(BatchSize=1,
+                                          LearningRate=5e-5,
+                                          TrainingData=refined_data[0: 250],
+                                          ValidationData=refined_data[250: 260],
+                                          TestingData=refined_data[260: 270],
+                                          TrainDurationMinutes=0.5,
+                                          NRMSEConvergence=0.001)
+    test = surrogate.FeedForward(__input__=refined_data[0][0],
+                                 __target__=refined_data[0][1],
+                                 __learn__=False,
+                                 __return_outputs__=True)
+    plt.figure(1)
+    plt.plot(range(len(loss1)), loss1, label='Train')
+    plt.plot(range(len(loss2)), loss2, label='Validate')
+    plt.legend()
+    plt.grid()
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    figManager = plt.get_current_fig_manager()
+    figManager.window.showMaximized()
     plt.show()
-    surrogate = Surrogate(NumberOfHiddenLayers=3, NumberOfInputChannels=len(refined_data[0][0]), NumberOfOutputChannels=len(refined_data[0][1]), Debugging=True, Filing=filing)
-    # loss1, loss2, loss3 = surrogate.Train(BatchSize=1, LearningRate=1e-4, TrainingData=refined_data[0: 250], ValidationData=refined_data[250: 260], TestingData=refined_data[260: 270], TrainDurationMinutes=0.5, NRMSEConvergence=0.001)
-    test = surrogate.FeedForward(__input__=refined_data[0][0], __target__=refined_data[0][1], __learn__=False, __return_outputs__=True)
     print(test)
     print(refined_data[0][1])
-    optimizer = PSO(NumberOfParticles=12, ParameterRanges=[[21.5 - 0.5, 21.5 + 0.5], [11 - 0.5, 11 + 0.5], [9 - 0.5, 9 + 0.5], [4 - 0.5, 4 + 0.5]],
+    optimizer = PSO(NumberOfParticles=1000,
+                    ParameterRanges=[[21.5 - 0.5, 21.5 + 0.5],
+                                     [11 - 0.5, 11 + 0.5],
+                                     [9 - 0.5, 9 + 0.5],
+                                     [4 - 0.5, 4 + 0.5]],
                     Objective=surrogate)
-    result = optimizer.Optimize(NumberOfIterations=1000, Convergence=0.0001, W=0.01, C1=1.0, C2=1.0)
-    print(result[0])
-    plt.plot(result[1])
-    plt.plot(result[2])
+    result = optimizer.Optimize(NumberOfIterations=100,
+                                Convergence=0.00001,
+                                W=0.001,
+                                C1=1.0,
+                                C2=1.0)
+
+    fig1, ax1 = plt.subplots(2, 1, sharex=True)
+    ax1[0].semilogy(result[1])
+    ax1[1].semilogx(result[2])
+    ax1[0].grid()
+    ax1[1].grid()
+    ax1[1].set_xlabel('Iteration')
+    ax1[0].set_ylabel('Return loss fitness')
+    ax1[1].set_ylabel('Gain fitness')
+    figManager = plt.get_current_fig_manager()
+    figManager.window.showMaximized()
     plt.show()
-    # plt.plot(loss1, label='Train')
-    # plt.plot(loss2, label='Validate')
-    # plt.grid()
-    # plt.legend()
-    # plt.xlabel('Epoch')
-    # plt.ylabel('Loss')
-    # print(sum(loss3) / len(loss3))
-    # plt.show()
-    # test = [-np.log(1 / __i__ - 1) for __i__ in test]
-    # test = [__i__ for __i__ in test]
-    # linear = [10 ** (data[0][1][0][1][__i__] / 20) for __i__ in range(len(data[0][1][0][0])) if 2.2 <= data[0][1][0][0][__i__] <= 2.6]
-    # plt.plot(np.linspace(2.2, 2.6, len(linear)), linear, label='Target')
-    # plt.plot(np.linspace(2.2, 2.6, len(linear)), test, 'o', alpha=0.3, label='Surrogate')
-    # plt.grid()
-    # plt.xlabel('Frequency (GHz)')
-    # plt.ylabel('Return Loss (linear)')
-    # plt.title('Frequency (GHz) vs Return Loss (linear)')
-    # plt.legend()
-    # plt.show()
-    # plt.plot(loss1, label='Train')
-    # plt.plot(loss2, label='Validate')
-    # print(sum(loss3) / len(loss3))
-    # plt.legend()
-    # plt.show()
-
-
